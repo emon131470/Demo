@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Investment Plans - InvestPro</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body class="dashboard-page">
+
+<header class="dashboard-header">
+
+    <a href="index.html" class="logo">
+        <span>INVEST</span>PRO
+    </a>
+
+    <div class="user-menu">
+
+        <span id="planUser">
+            User
+        </span>
+
+        <button onclick="logout()">
+            Logout
+        </button>
+
+    </div>
+
+</header>
+
+
+<main class="plans-page">
+
+    <div class="dashboard-title">
+
+        <span>INVESTMENT PLANS</span>
+
+        <h1>
+            Choose Your Investment Plan
+        </h1>
+
+        <p>
+            Review the available plans and choose an option
+            that matches your investment goals.
+        </p>
+
+    </div>
+
+
+    <div class="plans-container">
+
+
+        <!-- STARTER -->
+
+        <div class="plan-card">
+
+            <div class="plan-name">
+                STARTER
+            </div>
+
+            <h2>$10 - $50</h2>
+
+            <div class="plan-line">
+                Minimum Investment
+                <strong>$10</strong>
+            </div>
+
+            <div class="plan-line">
+                Maximum Investment
+                <strong>$50</strong>
+            </div>
+
+            <div class="plan-line">
+                Validity
+                <strong>50 Days</strong>
+            </div>
+
+            <button
+                onclick="selectPlan('Starter')"
+                class="full-btn">
+
+                Select Plan
+
+            </button>
+
+        </div>
+
+
+        <!-- SILVER -->
+
+        <div class="plan-card">
+
+            <div class="plan-name">
+                SILVER
+            </div>
+
+            <h2>$50 - $100</h2>
+
+            <div class="plan-line">
+                Minimum Investment
+                <strong>$50</strong>
+            </div>
+
+            <div class="plan-line">
+                Maximum Investment
+                <strong>$100</strong>
+            </div>
+
+            <div class="plan-line">
+                Validity
+                <strong>90 Days</strong>
+            </div>
+
+            <button
+                onclick="selectPlan('Silver')"
+                class="full-btn">
+
+                Select Plan
+
+            </button>
+
+        </div>
+
+
+        <!-- GOLD -->
+
+        <div class="plan-card featured">
+
+            <div class="popular">
+                POPULAR
+            </div>
+
+            <div class="plan-name">
+                GOLD
+            </div>
+
+            <h2>$100 - $500</h2>
+
+            <div class="plan-line">
+                Minimum Investment
+                <strong>$100</strong>
+            </div>
+
+            <div class="plan-line">
+                Maximum Investment
+                <strong>$500</strong>
+            </div>
+
+            <div class="plan-line">
+                Validity
+                <strong>120 Days</strong>
+            </div>
+
+            <button
+                onclick="selectPlan('Gold')"
+                class="full-btn">
+
+                Select Plan
+
+            </button>
+
+        </div>
+
+
+        <!-- DIAMOND -->
+
+        <div class="plan-card">
+
+            <div class="plan-name">
+                DIAMOND
+            </div>
+
+            <h2>$500 - $1,000</h2>
+
+            <div class="plan-line">
+                Minimum Investment
+                <strong>$500</strong>
+            </div>
+
+            <div class="plan-line">
+                Maximum Investment
+                <strong>$1,000</strong>
+            </div>
+
+            <div class="plan-line">
+                Validity
+                <strong>180 Days</strong>
+            </div>
+
+            <button
+                onclick="selectPlan('Diamond')"
+                class="full-btn">
+
+                Select Plan
+
+            </button>
+
+        </div>
+
+
+    </div>
+
+</main>
+
+
+<script src="js/app.js"></script>
+
+</body>
+</html>
