@@ -3,45 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>InvestPro - Smart Investment Platform</title>
-
-    <link rel="stylesheet" href="style.css">
+    <title>InvestPro - Smart Investment</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
 
-<!-- ================= HEADER ================= -->
 <header class="header">
 
-    <div class="logo">
+    <a href="index.html" class="logo">
         <span>INVEST</span>PRO
-    </div>
+    </a>
 
-    <!-- CENTER MENU -->
     <nav class="navbar">
-        <a href="index.php" class="active">Home</a>
-        <a href="#plans">Investment</a>
+        <a href="index.html" class="active">Home</a>
         <a href="#about">About</a>
         <a href="#how">How It Works</a>
-        <a href="#faq">FAQ</a>
+        <a href="#contact">Contact</a>
     </nav>
 
-    <!-- RIGHT BUTTONS -->
     <div class="auth-buttons">
-        <a href="register.php" class="register-btn">Register</a>
-        <a href="login.php" class="login-btn">Login</a>
-    </div>
-
-    <!-- MOBILE MENU -->
-    <div class="menu-toggle" onclick="toggleMenu()">
-        ☰
+        <a href="register.html" class="register-btn">Register</a>
+        <a href="login.html" class="login-btn">Login</a>
     </div>
 
 </header>
 
 
-<!-- ================= HERO SECTION ================= -->
 <section class="hero">
 
     <div class="hero-content">
@@ -52,87 +39,68 @@
 
         <h1>
             Invest Today.<br>
-            <span>Build a Brighter Tomorrow.</span>
+            <span>Build Your Future.</span>
         </h1>
 
         <p>
-            Discover smart investment opportunities designed to help
-            you take control of your financial future and grow your
-            wealth with confidence.
+            Explore structured investment opportunities and manage
+            your financial journey through one simple platform.
         </p>
 
         <div class="hero-buttons">
 
-            <a href="register.php" class="primary-btn">
-                Start Investing
-                <span>→</span>
+            <a href="register.html" class="primary-btn">
+                Create Account →
             </a>
 
-            <a href="#how" class="secondary-btn">
-                Learn More
+            <a href="login.html" class="secondary-btn">
+                Login
             </a>
 
         </div>
 
         <div class="trust-box">
-
-            <div>
-                <strong>✓</strong>
-                Transparent
-            </div>
-
-            <div>
-                <strong>✓</strong>
-                Easy to Manage
-            </div>
-
-            <div>
-                <strong>✓</strong>
-                Flexible Plans
-            </div>
-
+            <div>✓ Transparent</div>
+            <div>✓ Easy To Manage</div>
+            <div>✓ Flexible Plans</div>
         </div>
 
     </div>
 
 
-    <!-- HERO RIGHT SIDE -->
     <div class="hero-graphic">
 
         <div class="glow"></div>
 
-        <div class="coin coin-one">$</div>
-        <div class="coin coin-two">$</div>
-        <div class="coin coin-three">$</div>
-
         <div class="investment-card">
 
             <div class="card-top">
-                <span>Investment Growth</span>
+                <span>Portfolio Overview</span>
                 <span>↗</span>
             </div>
 
             <div class="chart">
 
-                <div class="line"></div>
+                <div class="chart-line"></div>
 
-                <div class="point point1"></div>
-                <div class="point point2"></div>
-                <div class="point point3"></div>
-                <div class="point point4"></div>
-                <div class="point point5"></div>
+                <span class="chart-point p1"></span>
+                <span class="chart-point p2"></span>
+                <span class="chart-point p3"></span>
+                <span class="chart-point p4"></span>
 
             </div>
 
             <div class="card-bottom">
+
                 <div>
                     <small>Portfolio</small>
-                    <strong>$24,850</strong>
+                    <strong>$2,850</strong>
                 </div>
 
                 <div class="growth">
-                    +18.42%
+                    Portfolio
                 </div>
+
             </div>
 
         </div>
@@ -142,72 +110,54 @@
 </section>
 
 
-<!-- ================= FEATURES ================= -->
-<section class="features" id="about">
+<section class="info-section" id="about">
 
     <div class="section-heading">
 
-        <span>WHY CHOOSE US</span>
+        <span>ABOUT INVESTPRO</span>
 
         <h2>
-            A Smarter Way To Plan Your Future
+            A Simple Way To Manage Your Investment Journey
         </h2>
 
         <p>
-            Manage your investments through a simple and transparent
-            platform built with your financial goals in mind.
+            Register your account, explore available plans and
+            manage your investments from your personal dashboard.
         </p>
 
     </div>
 
+</section>
 
-    <div class="feature-container">
 
-        <div class="feature-card">
+<section class="steps" id="how">
 
-            <div class="feature-icon">
-                ◈
-            </div>
+    <div class="section-heading">
 
-            <h3>Flexible Plans</h3>
+        <span>HOW IT WORKS</span>
 
-            <p>
-                Choose an investment option that fits your goals
-                and financial strategy.
-            </p>
+        <h2>Start In Three Simple Steps</h2>
 
+    </div>
+
+    <div class="step-container">
+
+        <div class="step-card">
+            <b>01</b>
+            <h3>Create Account</h3>
+            <p>Register your account with your basic information.</p>
         </div>
 
-
-        <div class="feature-card">
-
-            <div class="feature-icon">
-                ↗
-            </div>
-
-            <h3>Track Your Growth</h3>
-
-            <p>
-                Easily monitor your investments, transactions
-                and account activity from your dashboard.
-            </p>
-
+        <div class="step-card">
+            <b>02</b>
+            <h3>Choose A Plan</h3>
+            <p>Login and select an available investment plan.</p>
         </div>
 
-
-        <div class="feature-card">
-
-            <div class="feature-icon">
-                🔒
-            </div>
-
-            <h3>Secure Platform</h3>
-
-            <p>
-                Your account information and investment activity
-                are organized in one secure platform.
-            </p>
-
+        <div class="step-card">
+            <b>03</b>
+            <h3>Manage Investment</h3>
+            <p>View your selected investment from your dashboard.</p>
         </div>
 
     </div>
@@ -215,33 +165,7 @@
 </section>
 
 
-<!-- ================= CTA ================= -->
-<section class="cta">
-
-    <div>
-
-        <span>START YOUR JOURNEY</span>
-
-        <h2>
-            Your Financial Future Starts With A Smart Decision.
-        </h2>
-
-        <p>
-            Create your account and explore the investment options
-            available to you.
-        </p>
-
-        <a href="register.php" class="primary-btn">
-            Create Account →
-        </a>
-
-    </div>
-
-</section>
-
-
-<!-- ================= FOOTER ================= -->
-<footer>
+<footer id="contact">
 
     <div class="footer-logo">
         <span>INVEST</span>PRO
@@ -252,19 +176,6 @@
     </p>
 
 </footer>
-
-
-<script>
-
-function toggleMenu() {
-
-    const navbar = document.querySelector(".navbar");
-
-    navbar.classList.toggle("show");
-
-}
-
-</script>
 
 </body>
 </html>
