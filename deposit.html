@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Deposit - InvestPro</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body class="dashboard-page">
+
+<header class="dashboard-header">
+
+    <a href="index.html" class="logo">
+        INVEST<span>PRO</span>
+    </a>
+
+    <div class="user-menu">
+
+        <a href="investment.html" class="back-link">
+            ← Back to plans
+        </a>
+
+        <button onclick="logout()">
+            Logout
+        </button>
+
+    </div>
+
+</header>
+
+
+<main class="deposit-page">
+
+    <div class="dashboard-title">
+
+        <span>DEPOSIT</span>
+
+        <h1>Fund Your Investment</h1>
+
+        <p>
+            Enter the amount you want to invest in your selected plan.
+        </p>
+
+    </div>
+
+
+    <div class="deposit-layout">
+
+        <!-- SELECTED PLAN -->
+        <aside class="deposit-plan">
+
+            <div class="plan-name" id="planName">PLAN</div>
+
+            <h2 id="planRange">$0 - $0</h2>
+
+            <div class="plan-line">
+                Minimum Investment
+                <strong id="planMin">$0</strong>
+            </div>
+
+            <div class="plan-line">
+                Maximum Investment
+                <strong id="planMax">$0</strong>
+            </div>
+
+            <div class="plan-line">
+                Validity
+                <strong id="planDays">0 Days</strong>
+            </div>
+
+            <a href="investment.html" class="change-plan">
+                Change plan
+            </a>
+
+        </aside>
+
+
+        <!-- DEPOSIT FORM -->
+        <section class="deposit-box">
+
+            <form id="depositForm" novalidate>
+
+                <div class="form-group">
+
+                    <label for="depositAmount">Deposit Amount (USD)</label>
+
+                    <div class="amount-wrap">
+                        <span>$</span>
+                        <input
+                            type="number"
+                            id="depositAmount"
+                            placeholder="0.00"
+                            step="1"
+                            required
+                        >
+                    </div>
+
+                    <div class="quick-amounts">
+                        <button type="button" class="chip" id="useMin">Minimum</button>
+                        <button type="button" class="chip" id="useMax">Maximum</button>
+                    </div>
+
+                    <p class="form-hint" id="amountHint"></p>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="depositMethod">Payment Method</label>
+
+                    <select id="depositMethod">
+                        <option>Bank Transfer</option>
+                        <option>Mobile Banking</option>
+                        <option>Crypto (USDT)</option>
+                    </select>
+
+                </div>
+
+
+                <div class="deposit-summary">
+
+                    <div>
+                        <span>Selected plan</span>
+                        <strong id="sumPlan">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Amount</span>
+                        <strong id="sumAmount">$0</strong>
+                    </div>
+
+                    <div>
+                        <span>Validity</span>
+                        <strong id="sumDays">-</strong>
+                    </div>
+
+                </div>
+
+
+                <p class="form-error" id="depositError" role="alert"></p>
+
+                <button type="submit" class="full-btn">
+                    Confirm Deposit
+                </button>
+
+            </form>
+
+
+            <!-- SUCCESS MESSAGE -->
+            <div class="deposit-success" id="depositSuccess" hidden>
+
+                <div class="success-icon">✓</div>
+
+                <h2>Deposit request submitted</h2>
+
+                <p id="successText"></p>
+
+                <a href="dashboard.html" class="btn btn-primary btn-large">
+                    Go to Dashboard
+                </a>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</main>
+
+
+<script src="app.js"></script>
+
+<script>
+
+    /* ===== PLAN LIMITS ===== */
+    var PLANS = {
+        starter: { name: "Starter", min: 10,  max: 50,   days: 50  },
+        silver:  { name: "Silver",  min: 50,  max: 100,  days: 90  },
+        gold:    { name: "Gold",    min: 100, max: 500,  days: 120 },
+        diamond: { name: "Diamond", min: 500, max: 1000, days: 180 }
+    };
+
+    var planKey = (new URLSearchParams(window.location.search).get("plan") || "").toLowerCase();
+    var plan = PLANS[planKey];
+
+    function money(n) {
+        return "$" + Number(n).toLocaleString("en-US");
+    }
+
+    if (!plan) {
+
+        // No valid plan selected: send the user back to choose one
+        window.location.replace("investment.html");
+
+    } else {
+
+        var amountInput = document.getElementById("depositAmount");
+        var errorBox    = document.getElementById("depositError");
+        var hintBox     = document.getElementById("amountHint");
+
+        // Fill plan details
+        document.getElementById("planName").textContent  = plan.name.toUpperCase();
+        document.getElementById("planRange").textContent = money(plan.min) + " - " + money(plan.max);
+        document.getElementById("planMin").textContent   = money(plan.min);
+        document.getElementById("planMax").textContent   = money(plan.max);
+        document.getElementById("planDays").textContent  = plan.days + " Days";
+        document.getElementById("sumPlan").textContent   = plan.name;
+        document.getElementById("sumDays").textContent   = plan.days + " Days";
+
+        amountInput.min = plan.min;
+        amountInput.max = plan.max;
+        amountInput.placeholder = plan.min;
+
+        hintBox.textContent = "Enter an amount between " + money(plan.min) + " and " + money(plan.max) + ".";
+
+        function updateSummary() {
+            var v = parseFloat(amountInput.value);
+            document.getElementById("sumAmount").textContent = isNaN(v) ? "$0" : money(v);
+        }
+
+        function inRange(v) {
+            return !isNaN(v) && v >= plan.min && v <= plan.max;
+        }
+
+        amountInput.addEventListener("input", function () {
+            errorBox.textContent = "";
+            updateSummary();
+
+            var v = parseFloat(amountInput.value);
+            hintBox.classList.toggle("is-bad", amountInput.value !== "" && !inRange(v));
+        });
+
+        document.getElementById("useMin").addEventListener("click", function () {
+            amountInput.value = plan.min;
+            amountInput.dispatchEvent(new Event("input"));
+        });
+
+        document.getElementById("useMax").addEventListener("click", function () {
+            amountInput.value = plan.max;
+            amountInput.dispatchEvent(new Event("input"));
+        });
+
+        document.getElementById("depositForm").addEventListener("submit", function (e) {
+
+            e.preventDefault();
+
+            var amount = parseFloat(amountInput.value);
+
+            if (!inRange(amount)) {
+                errorBox.textContent =
+                    "For the " + plan.name + " plan, the amount must be between " +
+                    money(plan.min) + " and " + money(plan.max) + ".";
+                amountInput.focus();
+                return;
+            }
+
+            var method = document.getElementById("depositMethod").value;
+
+            // Save the request in this browser (demo only, no real payment)
+            try {
+                var list = JSON.parse(localStorage.getItem("investpro_deposits") || "[]");
+                list.push({
+                    plan: plan.name,
+                    amount: amount,
+                    method: method,
+                    days: plan.days,
+                    status: "Pending",
+                    date: new Date().toISOString()
+                });
+                localStorage.setItem("investpro_deposits", JSON.stringify(list));
+            } catch (err) {
+                console.error("Could not save deposit:", err);
+            }
+
+            document.getElementById("successText").textContent =
+                money(amount) + " deposit for the " + plan.name + " plan (" + method + ") is pending review.";
+
+            document.getElementById("depositForm").hidden = true;
+            document.getElementById("depositSuccess").hidden = false;
+        });
+    }
+
+</script>
+
+</body>
+</html>
