@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+
+    <title>Admin Panel - InvestPro</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #0a1628;
+            --bg-deep: #071120;
+            --surface: #0f2038;
+            --surface-2: #13294a;
+            --line: rgba(255,255,255,0.08);
+            --line-strong: rgba(255,255,255,0.18);
+            --text: #f3f5fa;
+            --muted: #9aa9c3;
+            --faint: #70809d;
+            --gold: #d6a84e;
+            --gold-light: #ebc77f;
+            --gold-ink: #1b1406;
+            --good: #4cc99a;
+            --bad: #ff8a8a;
+            --serif: "Fraunces", Georgia, serif;
+            --sans: "Inter", "Segoe UI", Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        [hidden] { display: none !important; }
+
+        h1, h2 { font-family: var(--serif); font-weight: 600; }
+
+        .logo {
+            font-family: var(--serif);
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+        .logo span { color: var(--gold); }
+
+        button { font-family: inherit; cursor: pointer; }
+
+        .btn {
+            padding: 11px 22px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold));
+            color: var(--gold-ink);
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.25s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(214,168,78,0.28); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--line-strong);
+        }
+        .btn-ghost:hover { border-color: var(--gold); color: var(--gold-light); box-shadow: none; }
+
+        /* ---------- LOGIN ---------- */
+        .login-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle at 50% 0%, rgba(214,168,78,0.1), transparent 50%), var(--bg);
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            background: linear-gradient(180deg, var(--surface-2), var(--surface));
+            border: 1px solid var(--line-strong);
+            border-radius: 20px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+        }
+
+        .login-box .tag {
+            display: block;
+            margin: 18px 0 6px;
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.8px;
+        }
+
+        .login-box h1 { font-size: 30px; margin-bottom: 26px; }
+
+        .field { margin-bottom: 16px; }
+        .field label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 13px; }
+        .field input {
+            width: 100%;
+            padding: 13px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--line-strong);
+            background: rgba(7,17,32,0.7);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+        .field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(214,168,78,0.15); }
+
+        .login-box .btn { width: 100%; padding: 14px; margin-top: 6px; }
+        .err { min-height: 20px; margin-top: 12px; color: var(--bad); font-size: 13px; }
+
+        /* ---------- PANEL ---------- */
+        .topbar {
+            height: 72px;
+            padding: 0 5%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-deep);
+            border-bottom: 1px solid var(--line);
+        }
+        .topbar .right { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 13px; }
+
+        .wrap { max-width: 1250px; margin: 0 auto; padding: 44px 24px 70px; }
+
+        .head h1 { font-size: 34px; }
+        .head p { color: var(--muted); margin-bottom: 30px; }
+
+        .notice {
+            margin-bottom: 28px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(214,168,78,0.3);
+            background: rgba(214,168,78,0.07);
+            color: var(--gold-light);
+            font-size: 13px;
+        }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 34px; }
+        .stat {
+            padding: 24px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+        }
+        .stat small { display: block; color: var(--faint); font-size: 13px; margin-bottom: 8px; }
+        .stat strong { font-family: var(--serif); font-size: 30px; font-weight: 600; }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .tabs { display: flex; gap: 8px; }
+        .tab {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--line-strong);
+            background: transparent;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.25s;
+        }
+        .tab.active { background: var(--surface-2); border-color: var(--gold); color: var(--gold-light); }
+
+        .search {
+            width: 280px;
+            max-width: 100%;
+            padding: 11px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--line-strong);
+            background: rgba(7,17,32,0.7);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+        .search:focus { border-color: var(--gold); }
+
+        .table-box {
+            overflow-x: auto;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 720px; }
+        th, td { padding: 15px 18px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--line); }
+        th { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 1px; background: rgba(7,17,32,0.5); }
+        tr:last-child td { border-bottom: none; }
+        td.muted { color: var(--muted); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.Pending  { background: rgba(214,168,78,0.14); color: var(--gold-light); }
+        .badge.Approved { background: rgba(76,201,154,0.14); color: var(--good); }
+        .badge.Rejected { background: rgba(255,138,138,0.14); color: var(--bad); }
+
+        .act { display: flex; gap: 8px; }
+        .act button {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--line-strong);
+            background: transparent;
+            color: var(--text);
+            font-size: 12px;
+            transition: 0.25s;
+        }
+        .act .ok:hover  { border-color: var(--good); color: var(--good); }
+        .act .no:hover  { border-color: var(--bad);  color: var(--bad); }
+
+        .empty { padding: 50px 24px; text-align: center; color: var(--muted); font-size: 14px; }
+
+        @media (max-width: 900px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 520px) {
+            .stats { grid-template-columns: 1fr; }
+            .login-box { padding: 28px; }
+        }
+    </style>
+
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="login-wrap" id="loginView">
+
+    <form class="login-box" id="loginForm">
+
+        <div class="logo">INVEST<span>PRO</span></div>
+
+        <span class="tag">ADMIN ACCESS</span>
+        <h1>Admin Login</h1>
+
+        <div class="field">
+            <label for="adminUser">Username</label>
+            <input type="text" id="adminUser" autocomplete="username" required>
+        </div>
+
+        <div class="field">
+            <label for="adminPass">Password</label>
+            <input type="password" id="adminPass" autocomplete="current-password" required>
+        </div>
+
+        <button type="submit" class="btn">Login</button>
+
+        <p class="err" id="loginErr"></p>
+
+    </form>
+
+</div>
+
+
+<!-- ================= PANEL ================= -->
+<div id="panelView" hidden>
+
+    <header class="topbar">
+        <div class="logo">INVEST<span>PRO</span> <small style="font-family:var(--sans);font-size:12px;color:var(--faint);letter-spacing:1.5px;">ADMIN</small></div>
+        <div class="right">
+            <a href="index.html" style="color:var(--muted);">View site</a>
+            <button class="btn btn-ghost" id="logoutBtn">Logout</button>
+        </div>
+    </header>
+
+    <main class="wrap">
+
+        <div class="head">
+            <h1>Dashboard</h1>
+            <p>Overview of registered users and deposit requests.</p>
+        </div>
+
+        <div class="notice">
+            This panel shows data saved in <b>this browser only</b>.
+            To see every visitor's data from any device, the website needs a real database (backend).
+        </div>
+
+        <div class="stats">
+            <div class="stat"><small>Total Users</small><strong id="statUsers">0</strong></div>
+            <div class="stat"><small>Deposit Requests</small><strong id="statDeposits">0</strong></div>
+            <div class="stat"><small>Pending</small><strong id="statPending">0</strong></div>
+            <div class="stat"><small>Approved Amount</small><strong id="statAmount">$0</strong></div>
+        </div>
+
+        <div class="toolbar">
+            <div class="tabs">
+                <button class="tab active" data-tab="users">Users</button>
+                <button class="tab" data-tab="deposits">Deposits</button>
+            </div>
+            <input type="search" class="search" id="searchBox" placeholder="Search...">
+        </div>
+
+        <div class="table-box" id="tableBox"></div>
+
+    </main>
+
+</div>
+
+
+<script>
+
+    /* ===== SETTINGS: CHANGE THESE ===== */
+    var ADMIN_USER = "admin";
+    var ADMIN_PASS = "admin123";
+
+    var DEP_KEY = "investpro_deposits";
+    var SESSION_KEY = "investpro_admin";
+
+    var currentTab = "users";
+
+    function $(id) { return document.getElementById(id); }
+
+    function esc(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function money(n) { return "$" + Number(n || 0).toLocaleString("en-US"); }
+
+    function fmtDate(d) {
+        if (!d) return "-";
+        var x = new Date(d);
+        return isNaN(x) ? esc(d) : x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    /* ===== LOGIN / LOGOUT ===== */
+    function showPanel(on) {
+        $("loginView").hidden = on;
+        $("panelView").hidden = !on;
+        if (on) render();
+    }
+
+    $("loginForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        if ($("adminUser").value === ADMIN_USER && $("adminPass").value === ADMIN_PASS) {
+            sessionStorage.setItem(SESSION_KEY, "1");
+            $("loginErr").textContent = "";
+            showPanel(true);
+        } else {
+            $("loginErr").textContent = "Wrong username or password.";
+        }
+    });
+
+    $("logoutBtn").addEventListener("click", function () {
+        sessionStorage.removeItem(SESSION_KEY);
+        $("adminPass").value = "";
+        showPanel(false);
+    });
+
+    /* ===== LOAD DATA ===== */
+    // Finds registered users saved by the website in localStorage
+    function loadUsers() {
+
+        var out = [], seen = {};
+
+        for (var i = 0; i < localStorage.length; i++) {
+
+            var key = localStorage.key(i);
+            if (key === DEP_KEY) continue;
+
+            var val;
+            try { val = JSON.parse(localStorage.getItem(key)); } catch (e) { continue; }
+
+            var items = null;
+
+            if (Array.isArray(val)) {
+                items = val;
+            } else if (val && typeof val === "object") {
+                var vals = Object.keys(val).map(function (k) { return val[k]; });
+                if (vals.length && vals.every(function (x) { return x && typeof x === "object"; })) items = vals;
+            }
+
+            if (!items) continue;
+
+            items.forEach(function (u) {
+                if (u && typeof u === "object" && (u.email || u.username)) {
+                    var id = String(u.email || u.username).toLowerCase();
+                    if (seen[id]) return;
+                    seen[id] = true;
+                    out.push(u);
+                }
+            });
+        }
+
+        return out;
+    }
+
+    function loadDeposits() {
+        try { return JSON.parse(localStorage.getItem(DEP_KEY) || "[]"); } catch (e) { return []; }
+    }
+
+    function saveDeposits(list) {
+        localStorage.setItem(DEP_KEY, JSON.stringify(list));
+    }
+
+    function userName(u) {
+        return u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "-";
+    }
+
+    /* ===== RENDER ===== */
+    function render() {
+
+        var users = loadUsers();
+        var deps = loadDeposits();
+
+        var pending = deps.filter(function (d) { return d.status === "Pending"; }).length;
+        var approved = deps
+            .filter(function (d) { return d.status === "Approved"; })
+            .reduce(function (s, d) { return s + Number(d.amount || 0); }, 0);
+
+        $("statUsers").textContent = users.length;
+        $("statDeposits").textContent = deps.length;
+        $("statPending").textContent = pending;
+        $("statAmount").textContent = money(approved);
+
+        var q = $("searchBox").value.trim().toLowerCase();
+
+        if (currentTab === "users") renderUsers(users, q);
+        else renderDeposits(deps, q);
+    }
+
+    function renderUsers(users, q) {
+
+        var rows = users.filter(function (u) {
+            return !q || JSON.stringify([userName(u), u.email, u.phone, u.username]).toLowerCase().indexOf(q) > -1;
+        });
+
+        if (!rows.length) {
+            $("tableBox").innerHTML = '<div class="empty">No users found in this browser.<br>' +
+                'Register a test account on the site, then refresh this page.</div>';
+            return;
+        }
+
+        var html = "<table><thead><tr><th>#</th><th>NAME</th><th>EMAIL</th><th>PHONE</th><th>REFERRAL</th><th>JOINED</th></tr></thead><tbody>";
+
+        rows.forEach(function (u, i) {
+            html += "<tr>" +
+                "<td class='muted'>" + (i + 1) + "</td>" +
+                "<td>" + esc(userName(u)) + "</td>" +
+                "<td class='muted'>" + esc(u.email || u.username || "-") + "</td>" +
+                "<td class='muted'>" + esc(u.phone || "-") + "</td>" +
+                "<td class='muted'>" + esc(u.referral || u.referralCode || "-") + "</td>" +
+                "<td class='muted'>" + fmtDate(u.createdAt || u.joined || u.date || u.registeredAt) + "</td>" +
+                "</tr>";
+        });
+
+        $("tableBox").innerHTML = html + "</tbody></table>";
+    }
+
+    function renderDeposits(deps, q) {
+
+        var rows = [];
+        deps.forEach(function (d, i) { rows.push({ d: d, i: i }); });
+
+        rows = rows.filter(function (r) {
+            return !q || JSON.stringify([r.d.plan, r.d.method, r.d.status, r.d.amount]).toLowerCase().indexOf(q) > -1;
+        }).reverse();
+
+        if (!rows.length) {
+            $("tableBox").innerHTML = '<div class="empty">No deposit requests yet.</div>';
+            return;
+        }
+
+        var html = "<table><thead><tr><th>DATE</th><th>PLAN</th><th>AMOUNT</th><th>METHOD</th><th>VALIDITY</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
+
+        rows.forEach(function (r) {
+            var d = r.d;
+            var status = d.status || "Pending";
+            html += "<tr>" +
+                "<td class='muted'>" + fmtDate(d.date) + "</td>" +
+                "<td>" + esc(d.plan) + "</td>" +
+                "<td><b>" + money(d.amount) + "</b></td>" +
+                "<td class='muted'>" + esc(d.method) + "</td>" +
+                "<td class='muted'>" + esc(d.days) + " Days</td>" +
+                "<td><span class='badge " + esc(status) + "'>" + esc(status) + "</span></td>" +
+                "<td><div class='act'>" +
+                    (status === "Pending"
+                        ? "<button class='ok' data-i='" + r.i + "' data-s='Approved'>Approve</button>" +
+                          "<button class='no' data-i='" + r.i + "' data-s='Rejected'>Reject</button>"
+                        : "<button data-i='" + r.i + "' data-s='Pending'>Reset</button>") +
+                "</div></td>" +
+                "</tr>";
+        });
+
+        $("tableBox").innerHTML = html + "</tbody></table>";
+    }
+
+    /* ===== EVENTS ===== */
+    document.querySelectorAll(".tab").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            document.querySelectorAll(".tab").forEach(function (b) { b.classList.remove("active"); });
+            btn.classList.add("active");
+            currentTab = btn.getAttribute("data-tab");
+            $("searchBox").value = "";
+            render();
+        });
+    });
+
+    $("searchBox").addEventListener("input", render);
+
+    $("tableBox").addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-i]");
+        if (!b) return;
+        var list = loadDeposits();
+        var idx = Number(b.getAttribute("data-i"));
+        if (list[idx]) {
+            list[idx].status = b.getAttribute("data-s");
+            saveDeposits(list);
+            render();
+        }
+    });
+
+    /* ===== START ===== */
+    showPanel(sessionStorage.getItem(SESSION_KEY) === "1");
+
+</script>
+
+</body>
+</html>
