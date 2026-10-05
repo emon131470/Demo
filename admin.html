@@ -200,7 +200,7 @@
             border: 1px solid var(--line);
             border-radius: 14px;
         }
-        table { width: 100%; border-collapse: collapse; min-width: 720px; }
+        table { width: 100%; border-collapse: collapse; min-width: 960px; }
         th, td { padding: 15px 18px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--line); }
         th { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 1px; background: rgba(7,17,32,0.5); }
         tr:last-child td { border-bottom: none; }
@@ -469,6 +469,15 @@
         $("tableBox").innerHTML = html + "</tbody></table>";
     }
 
+    function detailsHtml(d) {
+        var o = d.details || {};
+        var keys = Object.keys(o);
+        if (!keys.length) return "-";
+        return keys.map(function (k) {
+            return "<div><span style='color:var(--faint)'>" + esc(k) + ":</span> " + esc(o[k]) + "</div>";
+        }).join("");
+    }
+
     function renderDeposits(deps, q) {
 
         var rows = [];
@@ -483,7 +492,7 @@
             return;
         }
 
-        var html = "<table><thead><tr><th>DATE</th><th>PLAN</th><th>AMOUNT</th><th>METHOD</th><th>VALIDITY</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
+        var html = "<table><thead><tr><th>DATE</th><th>PLAN</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>VALIDITY</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
 
         rows.forEach(function (r) {
             var d = r.d;
@@ -493,6 +502,7 @@
                 "<td>" + esc(d.plan) + "</td>" +
                 "<td><b>" + money(d.amount) + "</b></td>" +
                 "<td class='muted'>" + esc(d.method) + "</td>" +
+                "<td class='muted' style='font-size:13px;min-width:220px;'>" + detailsHtml(d) + "</td>" +
                 "<td class='muted'>" + esc(d.days) + " Days</td>" +
                 "<td><span class='badge " + esc(status) + "'>" + esc(status) + "</span></td>" +
                 "<td><div class='act'>" +
