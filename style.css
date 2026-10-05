@@ -991,3 +991,40 @@ img {
 .auth-title h1 {
     color: #ffffff;
 }
+
+/* ================= AUTH HEADER ================= */
+
+.auth-page .header {
+    height: 76px;
+    padding: 0 6%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.register-btn,
+.login-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    transition: 0.3s;
+}
+
+.register-btn:hover,
+.login-btn:hover {
+    border-color: #24e0a5;
+    color: #24e0a5;
+}
+
+.auth-title h1 {
+    color: #ffffff;
+}
