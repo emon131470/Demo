@@ -1557,3 +1557,114 @@ img {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* ================= REFERRAL ================= */
+
+.ref-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 24px;
+    margin-bottom: 28px;
+    align-items: stretch;
+}
+
+.ref-code-card {
+    padding: 34px 30px;
+    background: linear-gradient(135deg, #168558, #0f5c3b);
+    border-radius: 18px;
+    color: #ffffff;
+    box-shadow: 0 24px 55px rgba(15, 92, 59, 0.28);
+}
+
+.ref-code-card small {
+    display: block;
+    color: #c9ecd9;
+    font-size: 13px;
+}
+
+.ref-code-card > strong {
+    display: block;
+    margin: 6px 0 16px;
+    font-family: var(--serif);
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    word-break: break-all;
+}
+
+.ref-code-card .chip {
+    border-color: rgba(255, 255, 255, 0.45);
+    color: #ffffff;
+}
+
+.ref-code-card .chip:hover {
+    background: #ffffff;
+    color: #0f5c3b;
+    border-color: #ffffff;
+}
+
+.ref-label {
+    margin-top: 26px;
+    margin-bottom: 8px;
+}
+
+.ref-link {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.ref-link input {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+}
+
+.ref-rates {
+    padding: 30px 28px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+}
+
+.ref-rates h3 {
+    margin-bottom: 8px;
+    font-size: 20px;
+}
+
+.ref-rates .plan-line strong {
+    color: var(--accent);
+}
+
+.ref-rates .plan-line:last-child {
+    border-bottom: none;
+}
+
+.dashboard-cards.ref-stats {
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 34px;
+}
+
+.sub-title {
+    margin-bottom: 14px;
+    font-size: 22px;
+}
+
+@media (max-width: 900px) {
+    .ref-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-cards.ref-stats {
+        grid-template-columns: 1fr;
+    }
+}
