@@ -58,6 +58,7 @@
         <button data-view="overview" class="active">Overview</button>
         <button data-view="investments">My Investments</button>
         <button data-view="withdraw">Withdraw</button>
+        <button data-view="referral">Referral</button>
         <button data-view="history">Transactions</button>
     </nav>
 
@@ -158,6 +159,11 @@
                 </div>
 
                 <div class="plan-line">
+                    Referral bonus
+                    <strong id="wdRef">$0.00</strong>
+                </div>
+
+                <div class="plan-line">
                     Already withdrawn / pending
                     <strong id="wdUsed">$0.00</strong>
                 </div>
@@ -217,6 +223,66 @@
     </section>
 
 
+    <!-- ================= REFERRAL ================= -->
+    <section class="dash-view" id="view-referral" hidden>
+
+        <div class="view-head">
+            <h2>Referral</h2>
+            <p>Share your code. When someone registers with it and buys a plan, you earn a commission based on that plan.</p>
+        </div>
+
+        <div class="ref-grid">
+
+            <div class="ref-code-card">
+
+                <small>Your referral code</small>
+
+                <strong id="refCode">-</strong>
+
+                <button type="button" class="chip" id="copyCode">Copy code</button>
+
+                <small class="ref-label">Your referral link</small>
+
+                <div class="ref-link">
+                    <input type="text" id="refLink" readonly>
+                    <button type="button" class="chip" id="copyLink">Copy link</button>
+                </div>
+
+            </div>
+
+            <div class="ref-rates">
+                <h3>Commission by plan</h3>
+                <div id="refRates"></div>
+            </div>
+
+        </div>
+
+        <div class="dashboard-cards ref-stats">
+
+            <div class="dash-card">
+                <small>Referred Users</small>
+                <strong id="refUsers">0</strong>
+            </div>
+
+            <div class="dash-card">
+                <small>Commission Earned</small>
+                <strong id="refEarned">$0.00</strong>
+            </div>
+
+            <div class="dash-card">
+                <small>Pending Commission</small>
+                <strong id="refPending">$0.00</strong>
+            </div>
+
+        </div>
+
+        <h3 class="sub-title">Your referrals</h3>
+
+        <div class="table-box" id="refTable"></div>
+
+    </section>
+
+
     <!-- ================= TRANSACTIONS ================= -->
     <section class="dash-view" id="view-history" hidden>
 
@@ -233,6 +299,7 @@
 
 
 <script src="app.js"></script>
+<script src="referral.js"></script>
 
 <script>
 
@@ -303,7 +370,7 @@
 
         var today = startOfDay(new Date());
 
-        return load(DEP_KEY)
+        return mine(load(DEP_KEY))
             .filter(function (d) { return d.status === "Approved"; })
             .map(function (d) {
 
@@ -334,7 +401,7 @@
     function getSummary() {
 
         var inv = getInvestments();
-        var wds = load(WD_KEY);
+        var wds = mine(load(WD_KEY));
 
         var profit = 0, active = 0, principalBack = 0;
 
@@ -348,14 +415,165 @@
             .filter(function (w) { return w.status === "Approved" || w.status === "Pending"; })
             .reduce(function (s, w) { return s + Number(w.amount || 0); }, 0);
 
+        var referral = getReferralData().earned;
+
         return {
             investments: inv,
             profit: round2(profit),
+            referral: referral,
             active: round2(active),
             used: round2(used),
-            available: Math.max(0, round2(profit + principalBack - used))
+            available: Math.max(0, round2(profit + principalBack + referral - used))
         };
     }
+
+
+    /* ===== LOGGED-IN USER + REFERRAL DATA ===== */
+    function mine(list) {
+        var me = IPRef.currentUser();
+        if (!me) return list;
+        return list.filter(function (x) { return !x.user || IPRef.lower(x.user) === me.email; });
+    }
+
+    function maskEmail(e) {
+        var p = String(e || "").split("@");
+        if (p.length !== 2) return e || "";
+        return p[0].slice(0, 2) + "***@" + p[1];
+    }
+
+    function getReferralData() {
+
+        var me = IPRef.currentUser();
+
+        var out = { me: me, code: me ? IPRef.codeFor(me.email) : "", users: {}, rows: [], earned: 0, pending: 0 };
+
+        if (!me) return out;
+
+        // users who registered with my code
+        var refs = IPRef.allRefs();
+        Object.keys(refs).forEach(function (email) {
+            if (IPRef.referrerOf(email) === me.email) {
+                out.users[email] = { name: refs[email].name || IPRef.nameFor(email), date: refs[email].date };
+            }
+        });
+
+        // plan purchases made by my referrals
+        load(DEP_KEY).forEach(function (d) {
+
+            if (!d.refBy || IPRef.lower(d.refBy) !== me.email) return;
+
+            var rate = IPRef.rate(d.plan);
+            var commission = round2(Number(d.amount || 0) * rate / 100);
+            var status = d.status || "Pending";
+
+            if (status === "Approved") out.earned += commission;
+            if (status === "Pending")  out.pending += commission;
+
+            var key = IPRef.lower(d.user);
+            if (key && !out.users[key]) out.users[key] = { name: d.userName || "", date: d.date };
+
+            out.rows.push({
+                user: key, name: d.userName || (out.users[key] && out.users[key].name) || "",
+                date: d.date, plan: d.plan, amount: Number(d.amount || 0),
+                rate: rate, commission: commission, status: status
+            });
+        });
+
+        out.earned  = round2(out.earned);
+        out.pending = round2(out.pending);
+
+        return out;
+    }
+
+    function renderReferral() {
+
+        var r = getReferralData();
+
+        // code + link
+        $("refCode").textContent = r.code || "Login again to get your code";
+
+        $("refLink").value = r.code
+            ? new URL("register.html?ref=" + r.code, window.location.href).href
+            : "";
+
+        // commission table by plan
+        var rates = "";
+        Object.keys(IPRef.REF_RATES).forEach(function (p) {
+            rates += '<div class="plan-line">' + esc(p) + ' plan<strong>' + IPRef.REF_RATES[p] + '%</strong></div>';
+        });
+        $("refRates").innerHTML = rates;
+
+        // stats
+        $("refUsers").textContent   = Object.keys(r.users).length;
+        $("refEarned").textContent  = money(r.earned);
+        $("refPending").textContent = money(r.pending);
+
+        // table
+        var box = $("refTable");
+        var keys = Object.keys(r.users);
+
+        if (!keys.length) {
+            box.innerHTML = '<div class="empty">No referrals yet. Share your code or link to start earning.</div>';
+            return;
+        }
+
+        var html = "<table><thead><tr><th>USER</th><th>JOINED</th><th>PLAN</th><th>DEPOSIT</th><th>COMMISSION</th><th>STATUS</th></tr></thead><tbody>";
+
+        keys.forEach(function (email) {
+
+            var u = r.users[email];
+            var label = esc(u.name || "User") + " <small>" + esc(maskEmail(email)) + "</small>";
+            var deps = r.rows.filter(function (x) { return x.user === email; });
+
+            if (!deps.length) {
+                html += "<tr><td>" + label + "</td><td class='muted'>" + fmtDate(u.date) + "</td>" +
+                        "<td class='muted' colspan='4'>No plan purchased yet</td></tr>";
+                return;
+            }
+
+            deps.forEach(function (x) {
+                html += "<tr>" +
+                    "<td>" + label + "</td>" +
+                    "<td class='muted'>" + fmtDate(u.date) + "</td>" +
+                    "<td>" + esc(x.plan) + "</td>" +
+                    "<td class='muted'>" + money(x.amount) + "</td>" +
+                    "<td><b>" + money(x.commission) + "</b> <small>(" + x.rate + "%)</small></td>" +
+                    "<td><span class='badge " + esc(x.status) + "'>" + esc(x.status) + "</span></td>" +
+                    "</tr>";
+            });
+        });
+
+        box.innerHTML = html + "</tbody></table>";
+    }
+
+    function copyText(text, btn, label) {
+
+        function done() {
+            btn.textContent = "Copied";
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done);
+        } else {
+            var t = document.createElement("textarea");
+            t.value = text;
+            document.body.appendChild(t);
+            t.select();
+            document.execCommand("copy");
+            document.body.removeChild(t);
+            done();
+        }
+    }
+
+    $("copyCode").addEventListener("click", function () {
+        var c = $("refCode").textContent;
+        if (/^IP/.test(c)) copyText(c, this, "Copy code");
+    });
+
+    $("copyLink").addEventListener("click", function () {
+        if ($("refLink").value) copyText($("refLink").value, this, "Copy link");
+    });
 
 
     /* ===== RENDER ===== */
@@ -368,6 +586,8 @@
         $("balanceVal").textContent = money(s.available);
         $("investVal").textContent  = money(s.active);
         $("profitVal").textContent  = money(s.profit);
+        $("bonusVal").textContent   = money(s.referral);
+        $("wdRef").textContent      = money(s.referral);
 
         $("wdAvailable").textContent = money(s.available);
         $("wdProfit").textContent    = money(s.profit);
@@ -376,6 +596,7 @@
 
         renderInvestments(s.investments);
         renderHistory();
+        renderReferral();
 
         if (openLogIndex >= 0 && s.investments[openLogIndex]) showLog(openLogIndex);
         else $("dailyLog").hidden = true;
@@ -449,7 +670,7 @@
 
         var rows = [];
 
-        load(DEP_KEY).forEach(function (d) {
+        mine(load(DEP_KEY)).forEach(function (d) {
             rows.push({
                 date: d.date, type: "Deposit",
                 info: esc(d.plan) + " plan, " + esc(d.method),
@@ -457,7 +678,7 @@
             });
         });
 
-        load(WD_KEY).forEach(function (w) {
+        mine(load(WD_KEY)).forEach(function (w) {
             rows.push({
                 date: w.date, type: "Withdrawal",
                 info: esc(w.method),
@@ -572,7 +793,11 @@
         }
 
         var list = load(WD_KEY);
+        var me = IPRef.currentUser();
+
         list.push({
+            user: me ? me.email : "",
+            userName: me ? me.name : "",
             amount: amount,
             method: method,
             details: { "Method": method, "Account": account },
