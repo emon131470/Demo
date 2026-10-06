@@ -1391,3 +1391,169 @@ img {
         scroll-behavior: auto !important;
     }
 }
+
+
+/* ================= DASHBOARD MENU & VIEWS ================= */
+
+.dash-menu {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 34px;
+    padding: 6px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+}
+
+.dash-menu button {
+    padding: 11px 22px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: 0.25s;
+}
+
+.dash-menu button:hover {
+    color: var(--accent);
+}
+
+.dash-menu button.active {
+    background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    color: var(--accent-ink);
+}
+
+.dash-view[hidden] {
+    display: none;
+}
+
+.view-head {
+    margin-bottom: 22px;
+}
+
+.view-head h2 {
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+.view-head p {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.dash-view .table-box table {
+    min-width: 860px;
+}
+
+#view-history .table-box table,
+.log-box .table-box table {
+    min-width: 520px;
+}
+
+.table-box small {
+    color: var(--faint);
+}
+
+.log-box {
+    margin-top: 28px;
+}
+
+.log-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.log-head h3 {
+    font-size: 20px;
+}
+
+.withdraw-layout {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.balance-card {
+    padding: 34px 28px;
+    background: linear-gradient(135deg, #168558, #0f5c3b);
+    border-radius: 18px;
+    color: #ffffff;
+    box-shadow: 0 24px 55px rgba(15, 92, 59, 0.28);
+}
+
+.balance-card small {
+    display: block;
+    color: #c9ecd9;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.balance-card > strong {
+    display: block;
+    margin-bottom: 18px;
+    font-family: var(--serif);
+    font-size: 42px;
+    font-weight: 600;
+}
+
+.balance-card .plan-line {
+    color: #c9ecd9;
+    border-bottom-color: rgba(255, 255, 255, 0.16);
+}
+
+.balance-card .plan-line strong {
+    color: #ffffff;
+}
+
+.balance-card .plan-line:last-child {
+    border-bottom: none;
+}
+
+.form-ok {
+    min-height: 0;
+    margin-bottom: 12px;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#view-withdraw .deposit-box select {
+    width: 100%;
+}
+
+.badge.Running   { background: var(--accent-soft); color: var(--accent); }
+.badge.Completed { background: #e8edf4; color: #4a5a73; }
+
+/* 4 cards on dashboard */
+.dashboard-cards {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .withdraw-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+}
