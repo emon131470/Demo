@@ -52,6 +52,8 @@
 
     </div>
 
+    <p class="form-error" id="loadError" role="alert"></p>
+
 
     <!-- DASHBOARD MENU -->
     <nav class="dash-menu" id="dashMenu">
@@ -118,7 +120,7 @@
 
         <div class="view-head">
             <h2>My Investments</h2>
-            <p>Date-wise investments with daily profit. Profit is credited once every 24 hours after your deposit is approved.</p>
+            <p>Date-wise investments with daily profit. Profit is credited once every day after your deposit is approved.</p>
         </div>
 
         <div class="table-box" id="invTable"></div>
@@ -142,7 +144,7 @@
 
         <div class="view-head">
             <h2>Withdraw</h2>
-            <p>Request a withdrawal from your available balance.</p>
+            <p>Request a (virtual) withdrawal from your available balance.</p>
         </div>
 
         <div class="withdraw-layout">
@@ -181,7 +183,7 @@
                 <form id="wdForm" novalidate>
 
                     <div class="form-group">
-                        <label for="wdAmount">Amount (USD)</label>
+                        <label for="wdAmount">Amount (virtual USD)</label>
                         <div class="amount-wrap">
                             <span>$</span>
                             <input type="number" id="wdAmount" placeholder="0.00" step="0.01">
@@ -192,25 +194,14 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="wdMethod">Withdraw To</label>
-                        <select id="wdMethod">
-                            <option>bKash</option>
-                            <option>Nagad</option>
-                            <option>Rocket</option>
-                            <option>Bank Transfer</option>
-                            <option>USDT (TRC20)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="wdAccount" id="wdAccountLabel">Mobile Number</label>
-                        <input type="text" id="wdAccount" placeholder="01XXXXXXXXX">
+                        <label for="wdNote">Note (optional)</label>
+                        <input type="text" id="wdNote" maxlength="200" placeholder="Anything you want the admin to know">
                     </div>
 
                     <p class="form-error" id="wdError" role="alert"></p>
                     <p class="form-ok" id="wdOk" role="status"></p>
 
-                    <button type="submit" class="full-btn">
+                    <button type="submit" class="full-btn" id="wdBtn">
                         Request Withdrawal
                     </button>
 
@@ -299,30 +290,12 @@
 
 
 <script src="app.js"></script>
-<script src="referral.js"></script>
 
 <script>
 
-    /* =====================================================
-       SETTINGS - CHANGE THESE TO YOUR REAL PLAN RULES
-       ===================================================== */
-
-    // Daily profit in % for each plan (placeholder numbers, set your own)
-    var PLAN_RATES = {
-        Starter: 1.0,
-        Silver:  1.2,
-        Gold:    1.5,
-        Diamond: 2.0
-    };
-
-    var PLAN_DAYS = { Starter: 50, Silver: 90, Gold: 120, Diamond: 180 };
-
-    var MIN_WITHDRAW = 5;          // minimum withdrawal in USD
-    var RETURN_PRINCIPAL = true;   // add the invested amount to balance when a plan ends
-
-    var DEP_KEY = "investpro_deposits";
-    var WD_KEY  = "investpro_withdrawals";
-    var DAY = 86400000;
+    var ctx = null;
+    var S = { summary: null, inv: [], logs: [], deps: [], wds: [], refs: [], plans: [] };
+    var openLog = -1;
 
 
     /* ===== HELPERS ===== */
@@ -337,276 +310,106 @@
         return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function round2(n) { return Math.round(n * 100) / 100; }
+    function parseDate(s) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(String(s))) {
+            var p = String(s).split("-");
+            return new Date(+p[0], +p[1] - 1, +p[2]);
+        }
+        return new Date(s);
+    }
 
     function fmtDate(d) {
-        var x = new Date(d);
+        var x = parseDate(d);
         return isNaN(x) ? "-" : x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     }
 
-    function startOfDay(d) {
-        var x = new Date(d);
-        x.setHours(0, 0, 0, 0);
-        return x;
-    }
-
     function addDays(d, n) {
-        var x = new Date(d);
+        var x = parseDate(d);
         x.setDate(x.getDate() + n);
         return x;
     }
 
-    function load(key) {
-        try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; }
+    function cap(s) {
+        s = String(s || "");
+        return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
-    function save(key, list) {
-        localStorage.setItem(key, JSON.stringify(list));
-    }
-
-
-    /* ===== PROFIT CALCULATION ===== */
-    function getInvestments() {
-
-        var today = startOfDay(new Date());
-
-        return mine(load(DEP_KEY))
-            .filter(function (d) { return d.status === "Approved"; })
-            .map(function (d) {
-
-                var amount = Number(d.amount || 0);
-                var rate   = PLAN_RATES[d.plan] || 0;
-                var days   = Number(d.days) || PLAN_DAYS[d.plan] || 0;
-                var start  = startOfDay(d.approvedAt || d.date);
-                var passed = Math.max(0, Math.round((today - start) / DAY));
-                var done   = Math.min(days, passed);
-                var daily  = round2(amount * rate / 100);
-
-                return {
-                    plan: d.plan,
-                    amount: amount,
-                    rate: rate,
-                    days: days,
-                    start: start,
-                    end: addDays(start, days),
-                    done: done,
-                    daily: daily,
-                    earned: round2(daily * done),
-                    completed: days > 0 && done >= days
-                };
-            })
-            .sort(function (a, b) { return b.start - a.start; });
-    }
-
-    function getSummary() {
-
-        var inv = getInvestments();
-        var wds = mine(load(WD_KEY));
-
-        var profit = 0, active = 0, principalBack = 0;
-
-        inv.forEach(function (i) {
-            profit += i.earned;
-            if (i.completed) { if (RETURN_PRINCIPAL) principalBack += i.amount; }
-            else active += i.amount;
-        });
-
-        var used = wds
-            .filter(function (w) { return w.status === "Approved" || w.status === "Pending"; })
-            .reduce(function (s, w) { return s + Number(w.amount || 0); }, 0);
-
-        var referral = getReferralData().earned;
-
-        return {
-            investments: inv,
-            profit: round2(profit),
-            referral: referral,
-            active: round2(active),
-            used: round2(used),
-            available: Math.max(0, round2(profit + principalBack + referral - used))
-        };
+    function showError(text) {
+        $("loadError").textContent = text || "";
     }
 
 
-    /* ===== LOGGED-IN USER + REFERRAL DATA ===== */
-    function mine(list) {
-        var me = IPRef.currentUser();
-        if (!me) return list;
-        return list.filter(function (x) { return !x.user || IPRef.lower(x.user) === me.email; });
-    }
+    /* ===== LOAD DATA FROM THE SERVER ===== */
+    async function loadAll() {
 
-    function maskEmail(e) {
-        var p = String(e || "").split("@");
-        if (p.length !== 2) return e || "";
-        return p[0].slice(0, 2) + "***@" + p[1];
-    }
+        var sb = ctx.sb;
 
-    function getReferralData() {
+        await sb.rpc("accrue_my_profits");   // adds any daily profit that is due
 
-        var me = IPRef.currentUser();
+        var r = await Promise.all([
+            sb.rpc("my_summary"),
+            sb.from("investments").select("*, plans(name)").order("start_date", { ascending: false }),
+            sb.from("profit_logs").select("investment_id, day_number, profit_date, amount").order("day_number", { ascending: false }),
+            sb.from("deposits").select("*, plans(name)").order("created_at", { ascending: false }),
+            sb.from("withdrawals").select("*").order("created_at", { ascending: false }),
+            sb.rpc("my_referrals"),
+            sb.from("plans").select("id, name, referral_rate, sort_order").order("sort_order")
+        ]);
 
-        var out = { me: me, code: me ? IPRef.codeFor(me.email) : "", users: {}, rows: [], earned: 0, pending: 0 };
+        var failed = r.filter(function (x) { return x.error; })[0];
 
-        if (!me) return out;
-
-        // users who registered with my code
-        var refs = IPRef.allRefs();
-        Object.keys(refs).forEach(function (email) {
-            if (IPRef.referrerOf(email) === me.email) {
-                out.users[email] = { name: refs[email].name || IPRef.nameFor(email), date: refs[email].date };
-            }
-        });
-
-        // plan purchases made by my referrals
-        load(DEP_KEY).forEach(function (d) {
-
-            if (!d.refBy || IPRef.lower(d.refBy) !== me.email) return;
-
-            var rate = IPRef.rate(d.plan);
-            var commission = round2(Number(d.amount || 0) * rate / 100);
-            var status = d.status || "Pending";
-
-            if (status === "Approved") out.earned += commission;
-            if (status === "Pending")  out.pending += commission;
-
-            var key = IPRef.lower(d.user);
-            if (key && !out.users[key]) out.users[key] = { name: d.userName || "", date: d.date };
-
-            out.rows.push({
-                user: key, name: d.userName || (out.users[key] && out.users[key].name) || "",
-                date: d.date, plan: d.plan, amount: Number(d.amount || 0),
-                rate: rate, commission: commission, status: status
-            });
-        });
-
-        out.earned  = round2(out.earned);
-        out.pending = round2(out.pending);
-
-        return out;
-    }
-
-    function renderReferral() {
-
-        var r = getReferralData();
-
-        // code + link
-        $("refCode").textContent = r.code || "Login again to get your code";
-
-        $("refLink").value = r.code
-            ? new URL("register.html?ref=" + r.code, window.location.href).href
-            : "";
-
-        // commission table by plan
-        var rates = "";
-        Object.keys(IPRef.REF_RATES).forEach(function (p) {
-            rates += '<div class="plan-line">' + esc(p) + ' plan<strong>' + IPRef.REF_RATES[p] + '%</strong></div>';
-        });
-        $("refRates").innerHTML = rates;
-
-        // stats
-        $("refUsers").textContent   = Object.keys(r.users).length;
-        $("refEarned").textContent  = money(r.earned);
-        $("refPending").textContent = money(r.pending);
-
-        // table
-        var box = $("refTable");
-        var keys = Object.keys(r.users);
-
-        if (!keys.length) {
-            box.innerHTML = '<div class="empty">No referrals yet. Share your code or link to start earning.</div>';
+        if (failed) {
+            showError("Could not load your data: " + failed.error.message);
             return;
         }
 
-        var html = "<table><thead><tr><th>USER</th><th>JOINED</th><th>PLAN</th><th>DEPOSIT</th><th>COMMISSION</th><th>STATUS</th></tr></thead><tbody>";
+        showError("");
 
-        keys.forEach(function (email) {
+        S.summary = r[0].data;
+        S.inv     = r[1].data;
+        S.logs    = r[2].data;
+        S.deps    = r[3].data;
+        S.wds     = r[4].data;
+        S.refs    = r[5].data;
+        S.plans   = r[6].data;
 
-            var u = r.users[email];
-            var label = esc(u.name || "User") + " <small>" + esc(maskEmail(email)) + "</small>";
-            var deps = r.rows.filter(function (x) { return x.user === email; });
-
-            if (!deps.length) {
-                html += "<tr><td>" + label + "</td><td class='muted'>" + fmtDate(u.date) + "</td>" +
-                        "<td class='muted' colspan='4'>No plan purchased yet</td></tr>";
-                return;
-            }
-
-            deps.forEach(function (x) {
-                html += "<tr>" +
-                    "<td>" + label + "</td>" +
-                    "<td class='muted'>" + fmtDate(u.date) + "</td>" +
-                    "<td>" + esc(x.plan) + "</td>" +
-                    "<td class='muted'>" + money(x.amount) + "</td>" +
-                    "<td><b>" + money(x.commission) + "</b> <small>(" + x.rate + "%)</small></td>" +
-                    "<td><span class='badge " + esc(x.status) + "'>" + esc(x.status) + "</span></td>" +
-                    "</tr>";
-            });
-        });
-
-        box.innerHTML = html + "</tbody></table>";
+        renderAll();
     }
 
-    function copyText(text, btn, label) {
-
-        function done() {
-            btn.textContent = "Copied";
-            setTimeout(function () { btn.textContent = label; }, 1500);
-        }
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done);
-        } else {
-            var t = document.createElement("textarea");
-            t.value = text;
-            document.body.appendChild(t);
-            t.select();
-            document.execCommand("copy");
-            document.body.removeChild(t);
-            done();
-        }
+    function logsOf(invId) {
+        return S.logs.filter(function (l) { return l.investment_id === invId; });
     }
-
-    $("copyCode").addEventListener("click", function () {
-        var c = $("refCode").textContent;
-        if (/^IP/.test(c)) copyText(c, this, "Copy code");
-    });
-
-    $("copyLink").addEventListener("click", function () {
-        if ($("refLink").value) copyText($("refLink").value, this, "Copy link");
-    });
 
 
     /* ===== RENDER ===== */
-    var openLogIndex = -1;
-
     function renderAll() {
 
-        var s = getSummary();
+        var s = S.summary;
 
         $("balanceVal").textContent = money(s.available);
         $("investVal").textContent  = money(s.active);
         $("profitVal").textContent  = money(s.profit);
         $("bonusVal").textContent   = money(s.referral);
-        $("wdRef").textContent      = money(s.referral);
 
         $("wdAvailable").textContent = money(s.available);
         $("wdProfit").textContent    = money(s.profit);
+        $("wdRef").textContent       = money(s.referral);
         $("wdUsed").textContent      = money(s.used);
-        $("wdMin").textContent       = "$" + MIN_WITHDRAW;
+        $("wdMin").textContent       = "$" + Number(s.min_withdraw);
 
-        renderInvestments(s.investments);
+        renderInvestments();
         renderHistory();
         renderReferral();
 
-        if (openLogIndex >= 0 && s.investments[openLogIndex]) showLog(openLogIndex);
+        if (openLog >= 0 && S.inv[openLog]) showLog(openLog);
         else $("dailyLog").hidden = true;
     }
 
-    function renderInvestments(list) {
+    function renderInvestments() {
 
         var box = $("invTable");
 
-        if (!list.length) {
+        if (!S.inv.length) {
             box.innerHTML = '<div class="empty">No active investments yet. Once your deposit is approved it will appear here. ' +
                 '<a href="investment.html" style="color:var(--accent);font-weight:600;">Choose a plan</a></div>';
             return;
@@ -617,17 +420,23 @@
             "<th>PROGRESS</th><th>EARNED</th><th>ENDS ON</th><th>STATUS</th><th></th>" +
             "</tr></thead><tbody>";
 
-        list.forEach(function (i, idx) {
+        S.inv.forEach(function (i, idx) {
+
+            var logs   = logsOf(i.id);
+            var earned = logs.reduce(function (sum, l) { return sum + Number(l.amount); }, 0);
+            var daily  = Number(i.amount) * Number(i.daily_rate) / 100;
+            var done   = logs.length;
+            var status = i.status === "completed" ? "Completed" : "Running";
+
             html += "<tr>" +
-                "<td class='muted'>" + fmtDate(i.start) + "</td>" +
-                "<td>" + esc(i.plan) + "</td>" +
+                "<td class='muted'>" + fmtDate(i.start_date) + "</td>" +
+                "<td>" + esc(i.plans ? i.plans.name : i.plan_id) + "</td>" +
                 "<td><b>" + money(i.amount) + "</b></td>" +
-                "<td class='muted'>" + money(i.daily) + " <small>(" + i.rate + "%)</small></td>" +
-                "<td class='muted'>Day " + i.done + " / " + i.days + "</td>" +
-                "<td><b>" + money(i.earned) + "</b></td>" +
-                "<td class='muted'>" + fmtDate(i.end) + "</td>" +
-                "<td><span class='badge " + (i.completed ? "Completed" : "Running") + "'>" +
-                    (i.completed ? "Completed" : "Running") + "</span></td>" +
+                "<td class='muted'>" + money(daily) + " <small>(" + Number(i.daily_rate) + "%)</small></td>" +
+                "<td class='muted'>Day " + done + " / " + i.duration_days + "</td>" +
+                "<td><b>" + money(earned) + "</b></td>" +
+                "<td class='muted'>" + fmtDate(addDays(i.start_date, i.duration_days)) + "</td>" +
+                "<td><span class='badge " + status + "'>" + status + "</span></td>" +
                 "<td><button type='button' class='chip' data-log='" + idx + "'>Daily profit</button></td>" +
                 "</tr>";
         });
@@ -637,28 +446,36 @@
 
     function showLog(idx) {
 
-        var i = getInvestments()[idx];
+        var i = S.inv[idx];
         if (!i) return;
 
-        openLogIndex = idx;
+        openLog = idx;
 
-        $("logTitle").textContent = i.plan + " plan, " + money(i.amount) + " (started " + fmtDate(i.start) + ")";
+        var logs = logsOf(i.id).slice().sort(function (a, b) { return a.day_number - b.day_number; });
 
-        if (!i.done) {
-            $("logTable").innerHTML = '<div class="empty">No profit credited yet. Your first daily profit of ' +
-                money(i.daily) + ' will be added 24 hours after approval.</div>';
+        $("logTitle").textContent = (i.plans ? i.plans.name : i.plan_id) + " plan, " + money(i.amount) +
+                                    " (started " + fmtDate(i.start_date) + ")";
+
+        if (!logs.length) {
+            $("logTable").innerHTML = '<div class="empty">No profit credited yet. Your first daily profit will be added one day after approval.</div>';
         } else {
+
+            var running = 0;
+            var rows = logs.map(function (l) {
+                running += Number(l.amount);
+                return { l: l, total: running };
+            }).reverse();
 
             var html = "<table><thead><tr><th>DAY</th><th>DATE</th><th>DAILY PROFIT</th><th>TOTAL EARNED</th></tr></thead><tbody>";
 
-            for (var d = i.done; d >= 1; d--) {
+            rows.forEach(function (r) {
                 html += "<tr>" +
-                    "<td class='muted'>Day " + d + "</td>" +
-                    "<td class='muted'>" + fmtDate(addDays(i.start, d)) + "</td>" +
-                    "<td><b>+" + money(i.daily) + "</b></td>" +
-                    "<td class='muted'>" + money(round2(i.daily * d)) + "</td>" +
+                    "<td class='muted'>Day " + r.l.day_number + "</td>" +
+                    "<td class='muted'>" + fmtDate(r.l.profit_date) + "</td>" +
+                    "<td><b>+" + money(r.l.amount) + "</b></td>" +
+                    "<td class='muted'>" + money(r.total) + "</td>" +
                     "</tr>";
-            }
+            });
 
             $("logTable").innerHTML = html + "</tbody></table>";
         }
@@ -670,19 +487,19 @@
 
         var rows = [];
 
-        mine(load(DEP_KEY)).forEach(function (d) {
+        S.deps.forEach(function (d) {
             rows.push({
-                date: d.date, type: "Deposit",
-                info: esc(d.plan) + " plan, " + esc(d.method),
-                amount: "+" + money(d.amount), status: d.status || "Pending"
+                date: d.created_at, type: "Deposit",
+                info: esc(d.plans ? d.plans.name : d.plan_id) + " plan",
+                amount: "+" + money(d.amount), status: cap(d.status)
             });
         });
 
-        mine(load(WD_KEY)).forEach(function (w) {
+        S.wds.forEach(function (w) {
             rows.push({
-                date: w.date, type: "Withdrawal",
-                info: esc(w.method),
-                amount: "-" + money(w.amount), status: w.status || "Pending"
+                date: w.created_at, type: "Withdrawal",
+                info: esc(w.note || "-"),
+                amount: "-" + money(w.amount), status: cap(w.status)
             });
         });
 
@@ -704,6 +521,61 @@
                 "<td class='muted'>" + r.info + "</td>" +
                 "<td><b>" + r.amount + "</b></td>" +
                 "<td><span class='badge " + esc(r.status) + "'>" + esc(r.status) + "</span></td>" +
+                "</tr>";
+        });
+
+        box.innerHTML = html + "</tbody></table>";
+    }
+
+    function renderReferral() {
+
+        var code = ctx.profile ? ctx.profile.referral_code : "";
+
+        $("refCode").textContent = code || "-";
+        $("refLink").value = code ? new URL("register.html?ref=" + code, window.location.href).href : "";
+
+        $("refRates").innerHTML = S.plans.map(function (p) {
+            return '<div class="plan-line">' + esc(p.name) + ' plan<strong>' + Number(p.referral_rate) + '%</strong></div>';
+        }).join("");
+
+        var users = {}, earned = 0, pending = 0;
+
+        S.refs.forEach(function (r) {
+            users[r.r_email] = true;
+            if (r.r_status === "approved") earned += Number(r.r_commission || 0);
+            if (r.r_status === "pending")  pending += Number(r.r_commission || 0);
+        });
+
+        $("refUsers").textContent   = Object.keys(users).length;
+        $("refEarned").textContent  = money(earned);
+        $("refPending").textContent = money(pending);
+
+        var box = $("refTable");
+
+        if (!S.refs.length) {
+            box.innerHTML = '<div class="empty">No referrals yet. Share your code or link to start earning.</div>';
+            return;
+        }
+
+        var html = "<table><thead><tr><th>USER</th><th>JOINED</th><th>PLAN</th><th>DEPOSIT</th><th>COMMISSION</th><th>STATUS</th></tr></thead><tbody>";
+
+        S.refs.forEach(function (r) {
+
+            var label = esc(r.r_name || "User") + " <small>" + esc(r.r_email) + "</small>";
+
+            if (!r.r_plan) {
+                html += "<tr><td>" + label + "</td><td class='muted'>" + fmtDate(r.r_joined) + "</td>" +
+                        "<td class='muted' colspan='4'>No plan purchased yet</td></tr>";
+                return;
+            }
+
+            html += "<tr>" +
+                "<td>" + label + "</td>" +
+                "<td class='muted'>" + fmtDate(r.r_joined) + "</td>" +
+                "<td>" + esc(r.r_plan) + "</td>" +
+                "<td class='muted'>" + money(r.r_amount) + "</td>" +
+                "<td><b>" + money(r.r_commission) + "</b></td>" +
+                "<td><span class='badge " + esc(cap(r.r_status)) + "'>" + esc(cap(r.r_status)) + "</span></td>" +
                 "</tr>";
         });
 
@@ -741,88 +613,96 @@
     });
 
     $("closeLog").addEventListener("click", function () {
-        openLogIndex = -1;
+        openLog = -1;
         $("dailyLog").hidden = true;
     });
 
 
+    /* ===== COPY BUTTONS ===== */
+    function copyText(text, btn, label) {
+
+        function done() {
+            btn.textContent = "Copied";
+            setTimeout(function () { btn.textContent = label; }, 1500);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done);
+        } else {
+            var t = document.createElement("textarea");
+            t.value = text;
+            document.body.appendChild(t);
+            t.select();
+            document.execCommand("copy");
+            document.body.removeChild(t);
+            done();
+        }
+    }
+
+    $("copyCode").addEventListener("click", function () {
+        var c = $("refCode").textContent;
+        if (/^IP/.test(c)) copyText(c, this, "Copy code");
+    });
+
+    $("copyLink").addEventListener("click", function () {
+        if ($("refLink").value) copyText($("refLink").value, this, "Copy link");
+    });
+
+
     /* ===== WITHDRAW FORM ===== */
-    var ACCOUNT_HINTS = {
-        "bKash":         ["Mobile Number", "01XXXXXXXXX"],
-        "Nagad":         ["Mobile Number", "01XXXXXXXXX"],
-        "Rocket":        ["Mobile Number", "01XXXXXXXXX"],
-        "Bank Transfer": ["Bank Account Details", "Bank name, account name and number"],
-        "USDT (TRC20)":  ["Wallet Address", "Your TRC20 wallet address"]
-    };
-
-    $("wdMethod").addEventListener("change", function () {
-        var h = ACCOUNT_HINTS[$("wdMethod").value];
-        $("wdAccountLabel").textContent = h[0];
-        $("wdAccount").placeholder = h[1];
-    });
-
     $("wdAll").addEventListener("click", function () {
-        $("wdAmount").value = getSummary().available;
+        if (S.summary) $("wdAmount").value = S.summary.available;
     });
 
-    $("wdForm").addEventListener("submit", function (e) {
+    $("wdForm").addEventListener("submit", async function (e) {
 
         e.preventDefault();
 
         $("wdError").textContent = "";
         $("wdOk").textContent = "";
 
-        var s = getSummary();
-        var amount = round2(parseFloat($("wdAmount").value));
-        var method = $("wdMethod").value;
-        var account = $("wdAccount").value.trim();
+        var amount = parseFloat($("wdAmount").value);
 
-        if (isNaN(amount) || amount < MIN_WITHDRAW) {
-            $("wdError").textContent = "Minimum withdrawal is $" + MIN_WITHDRAW + ".";
+        if (isNaN(amount) || amount <= 0) {
+            $("wdError").textContent = "Please enter an amount.";
             return;
         }
 
-        if (amount > s.available) {
-            $("wdError").textContent = "You can withdraw up to " + money(s.available) + ".";
-            return;
-        }
+        $("wdBtn").disabled = true;
 
-        if (!account) {
-            $("wdError").textContent = "Please enter your " + $("wdAccountLabel").textContent.toLowerCase() + ".";
-            return;
-        }
-
-        var list = load(WD_KEY);
-        var me = IPRef.currentUser();
-
-        list.push({
-            user: me ? me.email : "",
-            userName: me ? me.name : "",
-            amount: amount,
-            method: method,
-            details: { "Method": method, "Account": account },
-            status: "Pending",
-            date: new Date().toISOString()
+        var r = await ctx.sb.rpc("request_withdrawal", {
+            p_amount: amount,
+            p_note: $("wdNote").value.trim() || null
         });
-        save(WD_KEY, list);
+
+        $("wdBtn").disabled = false;
+
+        if (r.error) {
+            $("wdError").textContent = r.error.message;
+            return;
+        }
 
         $("wdForm").reset();
-        $("wdMethod").dispatchEvent(new Event("change"));
-        $("wdOk").textContent = "Withdrawal request of " + money(amount) + " submitted. It is pending review.";
+        $("wdOk").textContent = "Withdrawal request of " + money(amount) + " submitted. It is waiting for admin approval.";
 
-        renderAll();
+        loadAll();
     });
 
 
     /* ===== START ===== */
-    renderAll();
-    showView((location.hash || "#overview").slice(1));
+    IPReady.then(function (c) {
 
-    // Refresh when admin changes a status in another tab, or when user comes back to this tab
-    window.addEventListener("storage", renderAll);
-    document.addEventListener("visibilitychange", function () {
-        if (!document.hidden) renderAll();
-    });
+        ctx = c;
+
+        showView((location.hash || "#overview").slice(1));
+        loadAll();
+
+        // Refresh when the user comes back to this tab
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) loadAll();
+        });
+
+    }).catch(function () {});
 
 </script>
 
