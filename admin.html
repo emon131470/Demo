@@ -200,7 +200,7 @@
             border: 1px solid var(--line);
             border-radius: 14px;
         }
-        table { width: 100%; border-collapse: collapse; min-width: 960px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         th, td { padding: 15px 18px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--line); }
         th { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 1px; background: #f0f8f3; }
         tr:last-child td { border-bottom: none; }
@@ -318,6 +318,8 @@
 
 </div>
 
+
+<script src="referral.js"></script>
 
 <script>
 
@@ -457,15 +459,17 @@
             return;
         }
 
-        var html = "<table><thead><tr><th>#</th><th>NAME</th><th>EMAIL</th><th>PHONE</th><th>REFERRAL</th><th>JOINED</th></tr></thead><tbody>";
+        var html = "<table><thead><tr><th>#</th><th>NAME</th><th>EMAIL</th><th>MY CODE</th><th>PHONE</th><th>USED CODE</th><th>REFERRED BY</th><th>JOINED</th></tr></thead><tbody>";
 
         rows.forEach(function (u, i) {
             html += "<tr>" +
                 "<td class='muted'>" + (i + 1) + "</td>" +
                 "<td>" + esc(userName(u)) + "</td>" +
                 "<td class='muted'>" + esc(u.email || u.username || "-") + "</td>" +
+                "<td><b>" + esc(u.email ? IPRef.codeFor(u.email) : "-") + "</b></td>" +
                 "<td class='muted'>" + esc(u.phone || "-") + "</td>" +
-                "<td class='muted'>" + esc(u.referral || u.referralCode || "-") + "</td>" +
+                "<td class='muted'>" + esc((u.email && IPRef.usedCodeOf(u.email)) || "-") + "</td>" +
+                "<td class='muted'>" + esc((u.email && IPRef.referrerOf(u.email)) || "-") + "</td>" +
                 "<td class='muted'>" + fmtDate(u.createdAt || u.joined || u.date || u.registeredAt) + "</td>" +
                 "</tr>";
         });
@@ -495,13 +499,14 @@
             return;
         }
 
-        var html = "<table><thead><tr><th>DATE</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
+        var html = "<table><thead><tr><th>DATE</th><th>USER</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
 
         rows.forEach(function (r) {
             var w = r.w;
             var status = w.status || "Pending";
             html += "<tr>" +
                 "<td class='muted'>" + fmtDate(w.date) + "</td>" +
+                "<td>" + userCell(w) + "</td>" +
                 "<td><b>" + money(w.amount) + "</b></td>" +
                 "<td class='muted'>" + esc(w.method) + "</td>" +
                 "<td class='muted' style='font-size:13px;min-width:220px;'>" + detailsHtml(w) + "</td>" +
@@ -516,6 +521,14 @@
         });
 
         $("tableBox").innerHTML = html + "</tbody></table>";
+    }
+
+    function userCell(x) {
+        if (!x.user && !x.userName) return "<span class='muted'>-</span>";
+        var html = esc(x.userName || x.user);
+        if (x.userName && x.user) html += "<div style='font-size:12px;color:var(--faint)'>" + esc(x.user) + "</div>";
+        if (x.refBy) html += "<div style='font-size:12px;color:var(--gold-light)'>Referred by: " + esc(x.refBy) + "</div>";
+        return html;
     }
 
     function detailsHtml(d) {
@@ -541,13 +554,14 @@
             return;
         }
 
-        var html = "<table><thead><tr><th>DATE</th><th>PLAN</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>VALIDITY</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
+        var html = "<table><thead><tr><th>DATE</th><th>USER</th><th>PLAN</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>VALIDITY</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
 
         rows.forEach(function (r) {
             var d = r.d;
             var status = d.status || "Pending";
             html += "<tr>" +
                 "<td class='muted'>" + fmtDate(d.date) + "</td>" +
+                "<td>" + userCell(d) + "</td>" +
                 "<td>" + esc(d.plan) + "</td>" +
                 "<td><b>" + money(d.amount) + "</b></td>" +
                 "<td class='muted'>" + esc(d.method) + "</td>" +
