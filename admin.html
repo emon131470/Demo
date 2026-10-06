@@ -12,20 +12,20 @@
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
-            --bg: #0a1628;
-            --bg-deep: #071120;
-            --surface: #0f2038;
-            --surface-2: #13294a;
-            --line: rgba(255,255,255,0.08);
-            --line-strong: rgba(255,255,255,0.18);
-            --text: #f3f5fa;
-            --muted: #9aa9c3;
-            --faint: #70809d;
-            --gold: #d6a84e;
-            --gold-light: #ebc77f;
-            --gold-ink: #1b1406;
-            --good: #4cc99a;
-            --bad: #ff8a8a;
+            --bg: #f1faf5;
+            --bg-deep: #ffffff;
+            --surface: #ffffff;
+            --surface-2: #f5fbf8;
+            --line: rgba(18,70,45,0.10);
+            --line-strong: rgba(18,70,45,0.20);
+            --text: #10261b;
+            --muted: #4d6a5a;
+            --faint: #7b9588;
+            --gold: #126f47;
+            --gold-light: #178a58;
+            --gold-ink: #ffffff;
+            --good: #178a58;
+            --bad: #d64545;
             --serif: "Fraunces", Georgia, serif;
             --sans: "Inter", "Segoe UI", Arial, sans-serif;
         }
@@ -64,7 +64,7 @@
             font-weight: 600;
             transition: 0.25s;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(214,168,78,0.28); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(23,138,88,0.30); }
 
         .btn-ghost {
             background: transparent;
@@ -80,7 +80,7 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
-            background: radial-gradient(circle at 50% 0%, rgba(214,168,78,0.1), transparent 50%), var(--bg);
+            background: radial-gradient(circle at 50% 0%, rgba(34,165,106,0.16), transparent 50%), var(--bg);
         }
 
         .login-box {
@@ -90,7 +90,7 @@
             background: linear-gradient(180deg, var(--surface-2), var(--surface));
             border: 1px solid var(--line-strong);
             border-radius: 20px;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+            box-shadow: 0 30px 80px rgba(16,64,40,0.15);
         }
 
         .login-box .tag {
@@ -111,13 +111,13 @@
             padding: 13px 15px;
             border-radius: 10px;
             border: 1px solid var(--line-strong);
-            background: rgba(7,17,32,0.7);
+            background: #fbfefc;
             color: var(--text);
             font-family: inherit;
             font-size: 14px;
             outline: none;
         }
-        .field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(214,168,78,0.15); }
+        .field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(34,165,106,0.18); }
 
         .login-box .btn { width: 100%; padding: 14px; margin-top: 6px; }
         .err { min-height: 20px; margin-top: 12px; color: var(--bad); font-size: 13px; }
@@ -143,8 +143,8 @@
             margin-bottom: 28px;
             padding: 14px 18px;
             border-radius: 12px;
-            border: 1px solid rgba(214,168,78,0.3);
-            background: rgba(214,168,78,0.07);
+            border: 1px solid rgba(23,138,88,0.30);
+            background: #e1f5ea;
             color: var(--gold-light);
             font-size: 13px;
         }
@@ -186,7 +186,7 @@
             padding: 11px 15px;
             border-radius: 10px;
             border: 1px solid var(--line-strong);
-            background: rgba(7,17,32,0.7);
+            background: #fbfefc;
             color: var(--text);
             font-family: inherit;
             font-size: 14px;
@@ -202,7 +202,7 @@
         }
         table { width: 100%; border-collapse: collapse; min-width: 960px; }
         th, td { padding: 15px 18px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--line); }
-        th { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 1px; background: rgba(7,17,32,0.5); }
+        th { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 1px; background: #f0f8f3; }
         tr:last-child td { border-bottom: none; }
         td.muted { color: var(--muted); }
 
@@ -213,9 +213,9 @@
             font-size: 12px;
             font-weight: 600;
         }
-        .badge.Pending  { background: rgba(214,168,78,0.14); color: var(--gold-light); }
-        .badge.Approved { background: rgba(76,201,154,0.14); color: var(--good); }
-        .badge.Rejected { background: rgba(255,138,138,0.14); color: var(--bad); }
+        .badge.Pending  { background: #fdf1d8; color: #a86a0c; }
+        .badge.Approved { background: #e1f5ea; color: #178a58; }
+        .badge.Rejected { background: #fde8e8; color: #d64545; }
 
         .act { display: flex; gap: 8px; }
         .act button {
