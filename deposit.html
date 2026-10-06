@@ -143,7 +143,7 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="bankSenderBank"> AB Bank </label>
+                            <label for="bankSenderBank">Your Bank Name</label>
                             <input type="text" id="bankSenderBank" placeholder="e.g. Dutch-Bangla Bank">
                         </div>
                         <div class="form-group">
@@ -274,6 +274,7 @@
 
 
 <script src="app.js"></script>
+<script src="referral.js"></script>
 
 <script>
 
@@ -535,7 +536,13 @@
             // Save the request in this browser (demo only, no real payment)
             try {
                 var list = JSON.parse(localStorage.getItem("investpro_deposits") || "[]");
+                var me = IPRef.currentUser();
+                var refBy = me ? IPRef.referrerOf(me.email) : "";
+
                 list.push({
+                    user: me ? me.email : "",
+                    userName: me ? me.name : "",
+                    refBy: refBy || "",
                     plan: plan.name,
                     amount: amount,
                     method: info.label,
