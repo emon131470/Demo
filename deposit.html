@@ -45,7 +45,7 @@
         <h1>Fund Your Investment</h1>
 
         <p>
-            Enter the amount you want to invest in your selected plan.
+            Enter the virtual amount you want to invest in your selected plan.
         </p>
 
     </div>
@@ -75,6 +75,11 @@
                 <strong id="planDays">0 Days</strong>
             </div>
 
+            <div class="plan-line">
+                Daily Profit
+                <strong id="planRate">0%</strong>
+            </div>
+
             <a href="investment.html" class="change-plan">
                 Change plan
             </a>
@@ -87,10 +92,17 @@
 
             <form id="depositForm" novalidate>
 
-                <!-- AMOUNT -->
+                <div class="pay-info">
+                    <div class="pay-title">Demo deposit</div>
+                    <div style="font-size:13px;color:var(--muted);">
+                        This is a simulation. No real money is needed or accepted.
+                        After you submit, an admin approves the request and your plan starts.
+                    </div>
+                </div>
+
                 <div class="form-group">
 
-                    <label for="depositAmount">Deposit Amount (USD)</label>
+                    <label for="depositAmount">Deposit Amount (virtual USD)</label>
 
                     <div class="amount-wrap">
                         <span>$</span>
@@ -113,115 +125,15 @@
                 </div>
 
 
-                <!-- PAYMENT METHOD -->
                 <div class="form-group">
 
-                    <label>Payment Method</label>
+                    <label for="depositNote">Note (optional)</label>
 
-                    <div class="method-tabs">
-                        <button type="button" class="method-tab active" data-method="bank">
-                            <b>🏦</b> Bank Transfer
-                        </button>
-                        <button type="button" class="method-tab" data-method="mobile">
-                            <b>📱</b> Mobile Banking
-                        </button>
-                        <button type="button" class="method-tab" data-method="crypto">
-                            <b>₮</b> Crypto
-                        </button>
-                    </div>
+                    <input type="text" id="depositNote" maxlength="200" placeholder="Anything you want the admin to know">
 
                 </div>
 
 
-                <!-- ========== BANK FORM ========== -->
-                <div class="method-panel" id="panel-bank">
-
-                    <div class="pay-info">
-                        <div class="pay-title">Send money to this bank account</div>
-                        <div id="bankInfo"></div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="bankSenderBank">Your Bank Name</label>
-                            <input type="text" id="bankSenderBank" placeholder="e.g. Dutch-Bangla Bank">
-                        </div>
-                        <div class="form-group">
-                            <label for="bankHolder">Account Holder Name</label>
-                            <input type="text" id="bankHolder" placeholder="Name on your account">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="bankAccount">Your Account Number</label>
-                        <input type="text" id="bankAccount" placeholder="Account number you paid from">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="bankRef">Transaction / Reference ID</label>
-                        <input type="text" id="bankRef" placeholder="Reference number from your bank slip">
-                    </div>
-
-                </div>
-
-
-                <!-- ========== MOBILE BANKING FORM ========== -->
-                <div class="method-panel" id="panel-mobile" hidden>
-
-                    <div class="form-group">
-                        <label for="mobProvider">Mobile Banking Service</label>
-                        <select id="mobProvider"></select>
-                    </div>
-
-                    <div class="pay-info">
-                        <div class="pay-title">Send money to this number</div>
-                        <div id="mobileInfo"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mobSender">Your Mobile Number</label>
-                        <input type="tel" id="mobSender" placeholder="01XXXXXXXXX">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="mobTrx">Transaction ID (TrxID)</label>
-                        <input type="text" id="mobTrx" placeholder="e.g. 8N7A6D5E4C">
-                    </div>
-
-                </div>
-
-
-                <!-- ========== CRYPTO FORM ========== -->
-                <div class="method-panel" id="panel-crypto" hidden>
-
-                    <div class="form-group">
-                        <label for="cryNetwork">Coin / Network</label>
-                        <select id="cryNetwork"></select>
-                    </div>
-
-                    <div class="pay-info">
-                        <div class="pay-title">Send crypto to this wallet address</div>
-                        <div id="cryptoInfo"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cryWallet">Your Wallet Address</label>
-                        <input type="text" id="cryWallet" placeholder="Address you sent from">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cryHash">Transaction Hash (TXID)</label>
-                        <input type="text" id="cryHash" placeholder="Paste the transaction hash">
-                    </div>
-
-                    <p class="pay-note">
-                        Send only on the network you selected. Coins sent on a wrong network can be lost.
-                    </p>
-
-                </div>
-
-
-                <!-- SUMMARY -->
                 <div class="deposit-summary">
 
                     <div>
@@ -244,8 +156,8 @@
 
                 <p class="form-error" id="depositError" role="alert"></p>
 
-                <button type="submit" class="full-btn">
-                    Confirm Deposit
+                <button type="submit" class="full-btn" id="depositBtn">
+                    Submit Deposit Request
                 </button>
 
             </form>
@@ -260,8 +172,8 @@
 
                 <p id="successText"></p>
 
-                <a href="dashboard.html" class="btn btn-primary btn-large">
-                    Go to Dashboard
+                <a href="dashboard.html#history" class="btn btn-primary btn-large">
+                    View My Transactions
                 </a>
 
             </div>
@@ -274,295 +186,93 @@
 
 
 <script src="app.js"></script>
-<script src="referral.js"></script>
 
 <script>
-
-    /* =====================================================
-       PAYMENT DETAILS - CHANGE THESE TO YOUR REAL ACCOUNTS
-       ===================================================== */
-    var PAY = {
-
-        bank: [
-            ["Bank Name",      "Your Bank Name"],
-            ["Account Name",   "Your Account Name"],
-            ["Account Number", "0000000000000"],
-            ["Branch",         "Your Branch"]
-        ],
-
-        mobile: {
-            "bKash":  "01XXXXXXXXX",
-            "Nagad":  "01XXXXXXXXX",
-            "Rocket": "01XXXXXXXXX"
-        },
-
-        crypto: {
-            "USDT (TRC20)": "YOUR_TRC20_WALLET_ADDRESS",
-            "USDT (BEP20)": "YOUR_BEP20_WALLET_ADDRESS",
-            "USDT (ERC20)": "YOUR_ERC20_WALLET_ADDRESS"
-        }
-    };
-
-
-    /* ===== PLAN LIMITS ===== */
-    var PLANS = {
-        starter: { name: "Starter", min: 10,  max: 50,   days: 50  },
-        silver:  { name: "Silver",  min: 50,  max: 100,  days: 90  },
-        gold:    { name: "Gold",    min: 100, max: 500,  days: 120 },
-        diamond: { name: "Diamond", min: 500, max: 1000, days: 180 }
-    };
-
-    var planKey = (new URLSearchParams(window.location.search).get("plan") || "").toLowerCase();
-    var plan = PLANS[planKey];
 
     function $(id) { return document.getElementById(id); }
 
     function money(n) {
-        return "$" + Number(n).toLocaleString("en-US");
+        return "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
     }
 
-    function esc(s) {
-        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
+    IPReady.then(async function (ctx) {
 
-    if (!plan) {
+        var planId = (new URLSearchParams(window.location.search).get("plan") || "").toLowerCase();
 
-        // No valid plan selected: send the user back to choose one
-        window.location.replace("investment.html");
+        var res = await ctx.sb.from("plans").select("*").eq("id", planId).eq("active", true).maybeSingle();
 
-    } else {
+        if (res.error || !res.data) {
+            window.location.replace("investment.html");
+            return;
+        }
 
-        var amountInput = $("depositAmount");
-        var errorBox    = $("depositError");
-        var hintBox     = $("amountHint");
-        var method      = "bank";
+        var plan = res.data;
+        var min = Number(plan.min_amount);
+        var max = Number(plan.max_amount);
 
-        /* ----- Plan details ----- */
         $("planName").textContent  = plan.name.toUpperCase();
-        $("planRange").textContent = money(plan.min) + " - " + money(plan.max);
-        $("planMin").textContent   = money(plan.min);
-        $("planMax").textContent   = money(plan.max);
-        $("planDays").textContent  = plan.days + " Days";
+        $("planRange").textContent = money(min) + " - " + money(max);
+        $("planMin").textContent   = money(min);
+        $("planMax").textContent   = money(max);
+        $("planDays").textContent  = plan.duration_days + " Days";
+        $("planRate").textContent  = Number(plan.daily_rate) + "%";
         $("sumPlan").textContent   = plan.name;
-        $("sumDays").textContent   = plan.days + " Days";
+        $("sumDays").textContent   = plan.duration_days + " Days";
 
-        amountInput.min = plan.min;
-        amountInput.max = plan.max;
-        amountInput.placeholder = plan.min;
+        var input = $("depositAmount");
+        input.min = min;
+        input.max = max;
+        input.placeholder = min;
 
-        hintBox.textContent = "Enter an amount between " + money(plan.min) + " and " + money(plan.max) + ".";
+        $("amountHint").textContent = "Enter an amount between " + money(min) + " and " + money(max) + ".";
 
-        function inRange(v) {
-            return !isNaN(v) && v >= plan.min && v <= plan.max;
-        }
+        function inRange(v) { return !isNaN(v) && v >= min && v <= max; }
 
-        function updateSummary() {
-            var v = parseFloat(amountInput.value);
+        input.addEventListener("input", function () {
+            $("depositError").textContent = "";
+            var v = parseFloat(input.value);
             $("sumAmount").textContent = isNaN(v) ? "$0" : money(v);
-        }
-
-        amountInput.addEventListener("input", function () {
-            errorBox.textContent = "";
-            updateSummary();
-            var v = parseFloat(amountInput.value);
-            hintBox.classList.toggle("is-bad", amountInput.value !== "" && !inRange(v));
+            $("amountHint").classList.toggle("is-bad", input.value !== "" && !inRange(v));
         });
 
-        $("useMin").addEventListener("click", function () {
-            amountInput.value = plan.min;
-            amountInput.dispatchEvent(new Event("input"));
-        });
+        $("useMin").addEventListener("click", function () { input.value = min; input.dispatchEvent(new Event("input")); });
+        $("useMax").addEventListener("click", function () { input.value = max; input.dispatchEvent(new Event("input")); });
 
-        $("useMax").addEventListener("click", function () {
-            amountInput.value = plan.max;
-            amountInput.dispatchEvent(new Event("input"));
-        });
-
-
-        /* ----- "Send to" boxes with copy button ----- */
-        function infoRow(label, value) {
-            return '<div class="pay-row">' +
-                       '<span>' + esc(label) + '</span>' +
-                       '<b>' + esc(value) + '</b>' +
-                       '<button type="button" class="copy-btn" data-copy="' + esc(value) + '">Copy</button>' +
-                   '</div>';
-        }
-
-        function renderBank() {
-            $("bankInfo").innerHTML = PAY.bank.map(function (r) {
-                return infoRow(r[0], r[1]);
-            }).join("");
-        }
-
-        function renderMobile() {
-            var p = $("mobProvider").value;
-            $("mobileInfo").innerHTML = infoRow(p + " Number", PAY.mobile[p]);
-        }
-
-        function renderCrypto() {
-            var n = $("cryNetwork").value;
-            $("cryptoInfo").innerHTML = infoRow(n + " Address", PAY.crypto[n]);
-        }
-
-        function fillSelect(id, obj) {
-            $(id).innerHTML = Object.keys(obj).map(function (k) {
-                return "<option>" + esc(k) + "</option>";
-            }).join("");
-        }
-
-        fillSelect("mobProvider", PAY.mobile);
-        fillSelect("cryNetwork", PAY.crypto);
-
-        renderBank();
-        renderMobile();
-        renderCrypto();
-
-        $("mobProvider").addEventListener("change", renderMobile);
-        $("cryNetwork").addEventListener("change", renderCrypto);
-
-        document.addEventListener("click", function (e) {
-            var b = e.target.closest(".copy-btn");
-            if (!b) return;
-
-            var text = b.getAttribute("data-copy");
-
-            function done() {
-                b.textContent = "Copied";
-                setTimeout(function () { b.textContent = "Copy"; }, 1500);
-            }
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(done);
-            } else {
-                var t = document.createElement("textarea");
-                t.value = text;
-                document.body.appendChild(t);
-                t.select();
-                document.execCommand("copy");
-                document.body.removeChild(t);
-                done();
-            }
-        });
-
-
-        /* ----- Switch payment method ----- */
-        document.querySelectorAll(".method-tab").forEach(function (tab) {
-
-            tab.addEventListener("click", function () {
-
-                method = tab.getAttribute("data-method");
-
-                document.querySelectorAll(".method-tab").forEach(function (t) {
-                    t.classList.toggle("active", t === tab);
-                });
-
-                ["bank", "mobile", "crypto"].forEach(function (m) {
-                    $("panel-" + m).hidden = (m !== method);
-                });
-
-                errorBox.textContent = "";
-            });
-        });
-
-
-        /* ----- Read + validate the form of the chosen method ----- */
-        function val(id) { return $(id).value.trim(); }
-
-        function collectDetails() {
-
-            if (method === "bank") {
-                var d = {
-                    "Sender Bank":      val("bankSenderBank"),
-                    "Account Holder":   val("bankHolder"),
-                    "Account Number":   val("bankAccount"),
-                    "Reference ID":     val("bankRef")
-                };
-                for (var k in d) if (!d[k]) return { error: "Please fill in: " + k + "." };
-                return { label: "Bank Transfer", details: d };
-            }
-
-            if (method === "mobile") {
-                var p = $("mobProvider").value;
-                var num = val("mobSender");
-                var trx = val("mobTrx");
-
-                if (!/^[0-9+\s-]{10,16}$/.test(num)) return { error: "Please enter a valid mobile number." };
-                if (!trx) return { error: "Please enter the Transaction ID (TrxID)." };
-
-                return {
-                    label: "Mobile Banking (" + p + ")",
-                    details: { "Service": p, "Sender Number": num, "TrxID": trx }
-                };
-            }
-
-            // crypto
-            var net = $("cryNetwork").value;
-            var wallet = val("cryWallet");
-            var hash = val("cryHash");
-
-            if (!wallet) return { error: "Please enter your wallet address." };
-            if (!hash) return { error: "Please enter the transaction hash (TXID)." };
-
-            return {
-                label: "Crypto (" + net + ")",
-                details: { "Network": net, "Sender Wallet": wallet, "TXID": hash }
-            };
-        }
-
-
-        /* ----- Submit ----- */
-        $("depositForm").addEventListener("submit", function (e) {
+        $("depositForm").addEventListener("submit", async function (e) {
 
             e.preventDefault();
 
-            var amount = parseFloat(amountInput.value);
+            var amount = parseFloat(input.value);
 
             if (!inRange(amount)) {
-                errorBox.textContent =
-                    "For the " + plan.name + " plan, the amount must be between " +
-                    money(plan.min) + " and " + money(plan.max) + ".";
-                amountInput.focus();
+                $("depositError").textContent =
+                    "For the " + plan.name + " plan, the amount must be between " + money(min) + " and " + money(max) + ".";
+                input.focus();
                 return;
             }
 
-            var info = collectDetails();
+            $("depositBtn").disabled = true;
 
-            if (info.error) {
-                errorBox.textContent = info.error;
+            var r = await ctx.sb.rpc("request_deposit", {
+                p_plan: plan.id,
+                p_amount: amount,
+                p_note: $("depositNote").value.trim() || null
+            });
+
+            if (r.error) {
+                $("depositError").textContent = r.error.message;
+                $("depositBtn").disabled = false;
                 return;
-            }
-
-            // Save the request in this browser (demo only, no real payment)
-            try {
-                var list = JSON.parse(localStorage.getItem("investpro_deposits") || "[]");
-                var me = IPRef.currentUser();
-                var refBy = me ? IPRef.referrerOf(me.email) : "";
-
-                list.push({
-                    user: me ? me.email : "",
-                    userName: me ? me.name : "",
-                    refBy: refBy || "",
-                    plan: plan.name,
-                    amount: amount,
-                    method: info.label,
-                    details: info.details,
-                    days: plan.days,
-                    status: "Pending",
-                    date: new Date().toISOString()
-                });
-                localStorage.setItem("investpro_deposits", JSON.stringify(list));
-            } catch (err) {
-                console.error("Could not save deposit:", err);
             }
 
             $("successText").textContent =
-                money(amount) + " deposit for the " + plan.name + " plan (" + info.label + ") is pending review.";
+                money(amount) + " for the " + plan.name + " plan is waiting for admin approval.";
 
             $("depositForm").hidden = true;
             $("depositSuccess").hidden = false;
         });
-    }
+
+    }).catch(function () {});
 
 </script>
 
