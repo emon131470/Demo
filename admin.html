@@ -239,6 +239,43 @@
             .stats { grid-template-columns: 1fr; }
             .login-box { padding: 28px; }
         }
+    
+        .cell-input {
+            width: 90px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--line-strong);
+            background: #fbfefc;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+        .cell-input:focus { border-color: var(--gold-light); }
+
+        .toast {
+            min-height: 22px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .toast.err { color: var(--bad); }
+        .toast.ok  { color: var(--good); }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 22px;
+            padding: 18px 20px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+        }
+        .settings-row label { color: var(--muted); font-size: 14px; font-weight: 500; }
+
+        .small { font-size: 12px; color: var(--faint); }
     </style>
 
 </head>
@@ -247,7 +284,7 @@
 <!-- ================= LOGIN ================= -->
 <div class="login-wrap" id="loginView">
 
-    <form class="login-box" id="loginForm">
+    <form class="login-box" id="adminLoginForm" novalidate>
 
         <div class="logo">INVEST<span>PRO</span></div>
 
@@ -255,16 +292,11 @@
         <h1>Admin Login</h1>
 
         <div class="field">
-            <label for="adminUser">Username</label>
-            <input type="text" id="adminUser" autocomplete="username" required>
+            <label for="adminEmail">Admin email</label>
+            <input type="email" id="adminEmail" autocomplete="email" required>
         </div>
 
-        <div class="field">
-            <label for="adminPass">Password</label>
-            <input type="password" id="adminPass" autocomplete="current-password" required>
-        </div>
-
-        <button type="submit" class="btn">Login</button>
+        <button type="submit" class="btn" id="adminLoginBtn">Send Login Code</button>
 
         <p class="err" id="loginErr"></p>
 
@@ -279,6 +311,7 @@
     <header class="topbar">
         <div class="logo">INVEST<span>PRO</span> <small style="font-family:var(--sans);font-size:12px;color:var(--faint);letter-spacing:1.5px;">ADMIN</small></div>
         <div class="right">
+            <span id="adminName"></span>
             <a href="index.html" style="color:var(--muted);">View site</a>
             <button class="btn btn-ghost" id="logoutBtn">Logout</button>
         </div>
@@ -288,336 +321,404 @@
 
         <div class="head">
             <h1>Dashboard</h1>
-            <p>Overview of registered users and deposit requests.</p>
-        </div>
-
-        <div class="notice">
-            This panel shows data saved in <b>this browser only</b>.
-            To see every visitor's data from any device, the website needs a real database (backend).
+            <p>Review deposits and withdrawals, see users and edit plans. Everything here is virtual (demo).</p>
         </div>
 
         <div class="stats">
-            <div class="stat"><small>Total Users</small><strong id="statUsers">0</strong></div>
-            <div class="stat"><small>Deposit Requests</small><strong id="statDeposits">0</strong></div>
-            <div class="stat"><small>Pending</small><strong id="statPending">0</strong></div>
-            <div class="stat"><small>Approved Amount</small><strong id="statAmount">$0</strong></div>
+            <div class="stat"><small>Users</small><strong id="statUsers">0</strong></div>
+            <div class="stat"><small>Pending Deposits</small><strong id="statDeposits">0</strong></div>
+            <div class="stat"><small>Pending Withdrawals</small><strong id="statWithdrawals">0</strong></div>
+            <div class="stat"><small>Approved Deposits</small><strong id="statAmount">$0</strong></div>
         </div>
 
         <div class="toolbar">
             <div class="tabs">
-                <button class="tab active" data-tab="users">Users</button>
-                <button class="tab" data-tab="deposits">Deposits</button>
+                <button class="tab active" data-tab="deposits">Deposits</button>
                 <button class="tab" data-tab="withdrawals">Withdrawals</button>
+                <button class="tab" data-tab="users">Users</button>
+                <button class="tab" data-tab="plans">Plans</button>
             </div>
             <input type="search" class="search" id="searchBox" placeholder="Search...">
         </div>
 
+        <p class="toast" id="toast" role="status"></p>
+
         <div class="table-box" id="tableBox"></div>
+
+        <div class="settings-row" id="settingsRow" hidden>
+            <label for="minWithdraw">Minimum withdrawal (USD)</label>
+            <input type="number" class="cell-input" id="minWithdraw" min="0" step="0.01">
+            <button class="btn" id="saveSettings">Save</button>
+        </div>
 
     </main>
 
 </div>
 
 
-<script src="referral.js"></script>
+<script src="app.js"></script>
 
 <script>
 
-    /* ===== SETTINGS: CHANGE THESE ===== */
-    var ADMIN_USER = "admin";
-    var ADMIN_PASS = "admin123";
-
-    var DEP_KEY = "investpro_deposits";
-    var WD_KEY = "investpro_withdrawals";
-    var SESSION_KEY = "investpro_admin";
-
-    var currentTab = "users";
+    var ctx = null;
+    var currentTab = "deposits";
+    var cache = { deposits: [], withdrawals: [], users: [], plans: [], settings: null };
 
     function $(id) { return document.getElementById(id); }
 
     function esc(s) {
-        return String(s == null ? "" : s)
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                                         .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    function money(n) { return "$" + Number(n || 0).toLocaleString("en-US"); }
+    function money(n) {
+        return "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+    }
 
     function fmtDate(d) {
-        if (!d) return "-";
         var x = new Date(d);
-        return isNaN(x) ? esc(d) : x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+        return isNaN(x) ? "-" : x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     }
 
-    /* ===== LOGIN / LOGOUT ===== */
-    function showPanel(on) {
-        $("loginView").hidden = on;
-        $("panelView").hidden = !on;
-        if (on) render();
+    function cap(s) {
+        s = String(s || "");
+        return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
-    $("loginForm").addEventListener("submit", function (e) {
+    function toast(text, ok) {
+        $("toast").textContent = text || "";
+        $("toast").className = "toast " + (text ? (ok ? "ok" : "err") : "");
+    }
+
+    function userLabel(p) {
+        if (!p) return "<span class='muted'>-</span>";
+        var name = ((p.first_name || "") + " " + (p.last_name || "")).trim();
+        return esc(name || p.email) + "<div class='small'>" + esc(p.email) + "</div>";
+    }
+
+
+    /* ===== LOGIN ===== */
+    function showLogin(note) {
+        $("panelView").hidden = true;
+        $("loginView").hidden = false;
+        $("loginErr").textContent = note || "";
+    }
+
+    async function showPanel() {
+        $("loginView").hidden = true;
+        $("panelView").hidden = false;
+        $("adminName").textContent = ctx.profile ? ctx.profile.email : "";
+        await refresh();
+    }
+
+    async function isAdminNow() {
+
+        var s = (await ctx.sb.auth.getSession()).data.session;
+        if (!s) return false;
+
+        var p = await ctx.sb.from("profiles").select("*").eq("id", s.user.id).maybeSingle();
+        ctx.session = s;
+        ctx.profile = p.data || null;
+
+        return !!(ctx.profile && ctx.profile.role === "admin");
+    }
+
+    $("adminLoginForm").addEventListener("submit", async function (e) {
+
         e.preventDefault();
-        if ($("adminUser").value === ADMIN_USER && $("adminPass").value === ADMIN_PASS) {
-            sessionStorage.setItem(SESSION_KEY, "1");
-            $("loginErr").textContent = "";
-            showPanel(true);
-        } else {
-            $("loginErr").textContent = "Wrong username or password.";
+
+        var btn = $("adminLoginBtn");
+        btn.disabled = true;
+        $("loginErr").textContent = "";
+
+        var res = await IPAuth.login($("adminEmail").value);
+
+        if (!res.ok) {
+            $("loginErr").textContent = res.error;
+            btn.disabled = false;
+            return;
         }
+
+        if (!(await isAdminNow())) {
+            await ctx.sb.auth.signOut();
+            $("loginErr").textContent = "This account is not an admin.";
+            btn.disabled = false;
+            return;
+        }
+
+        btn.disabled = false;
+        showPanel();
     });
 
-    $("logoutBtn").addEventListener("click", function () {
-        sessionStorage.removeItem(SESSION_KEY);
-        $("adminPass").value = "";
-        showPanel(false);
+    $("logoutBtn").addEventListener("click", async function () {
+        await ctx.sb.auth.signOut();
+        showLogin();
     });
+
 
     /* ===== LOAD DATA ===== */
-    // Finds registered users saved by the website in localStorage
-    function loadUsers() {
+    async function loadStats() {
 
-        var out = [], seen = {};
+        var r = await ctx.sb.rpc("admin_stats");
+        if (r.error) { toast(r.error.message, false); return; }
 
-        for (var i = 0; i < localStorage.length; i++) {
+        $("statUsers").textContent       = r.data.users;
+        $("statDeposits").textContent    = r.data.pending_deposits;
+        $("statWithdrawals").textContent = r.data.pending_withdrawals;
+        $("statAmount").textContent      = money(r.data.approved_deposits);
+    }
 
-            var key = localStorage.key(i);
-            if (key === DEP_KEY) continue;
+    async function loadTab() {
 
-            var val;
-            try { val = JSON.parse(localStorage.getItem(key)); } catch (e) { continue; }
+        var sb = ctx.sb, r;
 
-            var items = null;
-
-            if (Array.isArray(val)) {
-                items = val;
-            } else if (val && typeof val === "object") {
-                var vals = Object.keys(val).map(function (k) { return val[k]; });
-                if (vals.length && vals.every(function (x) { return x && typeof x === "object"; })) items = vals;
-            }
-
-            if (!items) continue;
-
-            items.forEach(function (u) {
-                if (u && typeof u === "object" && (u.email || u.username)) {
-                    var id = String(u.email || u.username).toLowerCase();
-                    if (seen[id]) return;
-                    seen[id] = true;
-                    out.push(u);
-                }
-            });
+        if (currentTab === "deposits") {
+            r = await sb.from("deposits")
+                .select("*, plans(name), profiles!deposits_user_id_fkey(email, first_name, last_name)")
+                .order("created_at", { ascending: false });
+            if (!r.error) cache.deposits = r.data;
         }
 
-        return out;
+        if (currentTab === "withdrawals") {
+            r = await sb.from("withdrawals")
+                .select("*, profiles!withdrawals_user_id_fkey(email, first_name, last_name)")
+                .order("created_at", { ascending: false });
+            if (!r.error) cache.withdrawals = r.data;
+        }
+
+        if (currentTab === "users") {
+            r = await sb.from("profiles").select("*").order("created_at", { ascending: false });
+            if (!r.error) cache.users = r.data;
+        }
+
+        if (currentTab === "plans") {
+            r = await sb.from("plans").select("*").order("sort_order");
+            if (!r.error) cache.plans = r.data;
+
+            var st = await sb.from("settings").select("*").eq("id", 1).maybeSingle();
+            if (st.data) { cache.settings = st.data; $("minWithdraw").value = st.data.min_withdraw; }
+        }
+
+        if (r && r.error) toast("Could not load data: " + r.error.message, false);
     }
 
-    function loadDeposits() {
-        try { return JSON.parse(localStorage.getItem(DEP_KEY) || "[]"); } catch (e) { return []; }
+    async function refresh() {
+        await Promise.all([loadStats(), loadTab()]);
+        render();
     }
 
-    function saveDeposits(list) {
-        localStorage.setItem(DEP_KEY, JSON.stringify(list));
-    }
-
-    function userName(u) {
-        return u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "-";
-    }
 
     /* ===== RENDER ===== */
     function render() {
 
-        var users = loadUsers();
-        var deps = loadDeposits();
-
-        var pending = deps.filter(function (d) { return d.status === "Pending"; }).length +
-                      loadWithdrawals().filter(function (w) { return w.status === "Pending"; }).length;
-        var approved = deps
-            .filter(function (d) { return d.status === "Approved"; })
-            .reduce(function (s, d) { return s + Number(d.amount || 0); }, 0);
-
-        $("statUsers").textContent = users.length;
-        $("statDeposits").textContent = deps.length;
-        $("statPending").textContent = pending;
-        $("statAmount").textContent = money(approved);
+        $("settingsRow").hidden = (currentTab !== "plans");
 
         var q = $("searchBox").value.trim().toLowerCase();
 
-        if (currentTab === "users") renderUsers(users, q);
-        else if (currentTab === "withdrawals") renderWithdrawals(loadWithdrawals(), q);
-        else renderDeposits(deps, q);
+        if (currentTab === "deposits")    renderDeposits(q);
+        if (currentTab === "withdrawals") renderWithdrawals(q);
+        if (currentTab === "users")       renderUsers(q);
+        if (currentTab === "plans")       renderPlans();
     }
 
-    function renderUsers(users, q) {
+    function matches(obj, q) {
+        return !q || JSON.stringify(obj).toLowerCase().indexOf(q) > -1;
+    }
 
-        var rows = users.filter(function (u) {
-            return !q || JSON.stringify([userName(u), u.email, u.phone, u.username]).toLowerCase().indexOf(q) > -1;
-        });
+    function actionButtons(kind, id) {
+        return "<div class='act'>" +
+            "<button class='ok' data-kind='" + kind + "' data-id='" + id + "' data-approve='true'>Approve</button>" +
+            "<button class='no' data-kind='" + kind + "' data-id='" + id + "' data-approve='false'>Reject</button>" +
+            "</div>";
+    }
 
-        if (!rows.length) {
-            $("tableBox").innerHTML = '<div class="empty">No users found in this browser.<br>' +
-                'Register a test account on the site, then refresh this page.</div>';
-            return;
-        }
+    function renderDeposits(q) {
 
-        var html = "<table><thead><tr><th>#</th><th>NAME</th><th>EMAIL</th><th>MY CODE</th><th>PHONE</th><th>USED CODE</th><th>REFERRED BY</th><th>JOINED</th></tr></thead><tbody>";
+        var rows = cache.deposits.filter(function (d) { return matches(d, q); });
 
-        rows.forEach(function (u, i) {
+        if (!rows.length) { $("tableBox").innerHTML = '<div class="empty">No deposit requests.</div>'; return; }
+
+        var html = "<table><thead><tr><th>DATE</th><th>USER</th><th>PLAN</th><th>AMOUNT</th><th>NOTE</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
+
+        rows.forEach(function (d) {
+            var st = cap(d.status);
             html += "<tr>" +
-                "<td class='muted'>" + (i + 1) + "</td>" +
-                "<td>" + esc(userName(u)) + "</td>" +
-                "<td class='muted'>" + esc(u.email || u.username || "-") + "</td>" +
-                "<td><b>" + esc(u.email ? IPRef.codeFor(u.email) : "-") + "</b></td>" +
-                "<td class='muted'>" + esc(u.phone || "-") + "</td>" +
-                "<td class='muted'>" + esc((u.email && IPRef.usedCodeOf(u.email)) || "-") + "</td>" +
-                "<td class='muted'>" + esc((u.email && IPRef.referrerOf(u.email)) || "-") + "</td>" +
-                "<td class='muted'>" + fmtDate(u.createdAt || u.joined || u.date || u.registeredAt) + "</td>" +
-                "</tr>";
-        });
-
-        $("tableBox").innerHTML = html + "</tbody></table>";
-    }
-
-    function loadWithdrawals() {
-        try { return JSON.parse(localStorage.getItem(WD_KEY) || "[]"); } catch (e) { return []; }
-    }
-
-    function saveWithdrawals(list) {
-        localStorage.setItem(WD_KEY, JSON.stringify(list));
-    }
-
-    function renderWithdrawals(list, q) {
-
-        var rows = [];
-        list.forEach(function (w, i) { rows.push({ w: w, i: i }); });
-
-        rows = rows.filter(function (r) {
-            return !q || JSON.stringify([r.w.method, r.w.status, r.w.amount, r.w.details]).toLowerCase().indexOf(q) > -1;
-        }).reverse();
-
-        if (!rows.length) {
-            $("tableBox").innerHTML = '<div class="empty">No withdrawal requests yet.</div>';
-            return;
-        }
-
-        var html = "<table><thead><tr><th>DATE</th><th>USER</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
-
-        rows.forEach(function (r) {
-            var w = r.w;
-            var status = w.status || "Pending";
-            html += "<tr>" +
-                "<td class='muted'>" + fmtDate(w.date) + "</td>" +
-                "<td>" + userCell(w) + "</td>" +
-                "<td><b>" + money(w.amount) + "</b></td>" +
-                "<td class='muted'>" + esc(w.method) + "</td>" +
-                "<td class='muted' style='font-size:13px;min-width:220px;'>" + detailsHtml(w) + "</td>" +
-                "<td><span class='badge " + esc(status) + "'>" + esc(status) + "</span></td>" +
-                "<td><div class='act'>" +
-                    (status === "Pending"
-                        ? "<button class='ok' data-t='w' data-i='" + r.i + "' data-s='Approved'>Approve</button>" +
-                          "<button class='no' data-t='w' data-i='" + r.i + "' data-s='Rejected'>Reject</button>"
-                        : "<button data-t='w' data-i='" + r.i + "' data-s='Pending'>Reset</button>") +
-                "</div></td>" +
-                "</tr>";
-        });
-
-        $("tableBox").innerHTML = html + "</tbody></table>";
-    }
-
-    function userCell(x) {
-        if (!x.user && !x.userName) return "<span class='muted'>-</span>";
-        var html = esc(x.userName || x.user);
-        if (x.userName && x.user) html += "<div style='font-size:12px;color:var(--faint)'>" + esc(x.user) + "</div>";
-        if (x.refBy) html += "<div style='font-size:12px;color:var(--gold-light)'>Referred by: " + esc(x.refBy) + "</div>";
-        return html;
-    }
-
-    function detailsHtml(d) {
-        var o = d.details || {};
-        var keys = Object.keys(o);
-        if (!keys.length) return "-";
-        return keys.map(function (k) {
-            return "<div><span style='color:var(--faint)'>" + esc(k) + ":</span> " + esc(o[k]) + "</div>";
-        }).join("");
-    }
-
-    function renderDeposits(deps, q) {
-
-        var rows = [];
-        deps.forEach(function (d, i) { rows.push({ d: d, i: i }); });
-
-        rows = rows.filter(function (r) {
-            return !q || JSON.stringify([r.d.plan, r.d.method, r.d.status, r.d.amount]).toLowerCase().indexOf(q) > -1;
-        }).reverse();
-
-        if (!rows.length) {
-            $("tableBox").innerHTML = '<div class="empty">No deposit requests yet.</div>';
-            return;
-        }
-
-        var html = "<table><thead><tr><th>DATE</th><th>USER</th><th>PLAN</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>VALIDITY</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
-
-        rows.forEach(function (r) {
-            var d = r.d;
-            var status = d.status || "Pending";
-            html += "<tr>" +
-                "<td class='muted'>" + fmtDate(d.date) + "</td>" +
-                "<td>" + userCell(d) + "</td>" +
-                "<td>" + esc(d.plan) + "</td>" +
+                "<td class='muted'>" + fmtDate(d.created_at) + "</td>" +
+                "<td>" + userLabel(d.profiles) + "</td>" +
+                "<td>" + esc(d.plans ? d.plans.name : d.plan_id) + "</td>" +
                 "<td><b>" + money(d.amount) + "</b></td>" +
-                "<td class='muted'>" + esc(d.method) + "</td>" +
-                "<td class='muted' style='font-size:13px;min-width:220px;'>" + detailsHtml(d) + "</td>" +
-                "<td class='muted'>" + esc(d.days) + " Days</td>" +
-                "<td><span class='badge " + esc(status) + "'>" + esc(status) + "</span></td>" +
-                "<td><div class='act'>" +
-                    (status === "Pending"
-                        ? "<button class='ok' data-i='" + r.i + "' data-s='Approved'>Approve</button>" +
-                          "<button class='no' data-i='" + r.i + "' data-s='Rejected'>Reject</button>"
-                        : "<button data-i='" + r.i + "' data-s='Pending'>Reset</button>") +
-                "</div></td>" +
+                "<td class='muted'>" + esc(d.note || "-") + "</td>" +
+                "<td><span class='badge " + st + "'>" + st + "</span></td>" +
+                "<td>" + (d.status === "pending" ? actionButtons("deposit", d.id) : "<span class='small'>Reviewed</span>") + "</td>" +
                 "</tr>";
         });
 
         $("tableBox").innerHTML = html + "</tbody></table>";
     }
+
+    function renderWithdrawals(q) {
+
+        var rows = cache.withdrawals.filter(function (w) { return matches(w, q); });
+
+        if (!rows.length) { $("tableBox").innerHTML = '<div class="empty">No withdrawal requests.</div>'; return; }
+
+        var html = "<table><thead><tr><th>DATE</th><th>USER</th><th>AMOUNT</th><th>NOTE</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
+
+        rows.forEach(function (w) {
+            var st = cap(w.status);
+            html += "<tr>" +
+                "<td class='muted'>" + fmtDate(w.created_at) + "</td>" +
+                "<td>" + userLabel(w.profiles) + "</td>" +
+                "<td><b>" + money(w.amount) + "</b></td>" +
+                "<td class='muted'>" + esc(w.note || "-") + "</td>" +
+                "<td><span class='badge " + st + "'>" + st + "</span></td>" +
+                "<td>" + (w.status === "pending" ? actionButtons("withdrawal", w.id) : "<span class='small'>Reviewed</span>") + "</td>" +
+                "</tr>";
+        });
+
+        $("tableBox").innerHTML = html + "</tbody></table>";
+    }
+
+    function renderUsers(q) {
+
+        var byId = {};
+        cache.users.forEach(function (u) { byId[u.id] = u; });
+
+        var rows = cache.users.filter(function (u) { return matches(u, q); });
+
+        if (!rows.length) { $("tableBox").innerHTML = '<div class="empty">No users.</div>'; return; }
+
+        var html = "<table><thead><tr><th>NAME</th><th>EMAIL</th><th>PHONE</th><th>REFERRAL CODE</th><th>REFERRED BY</th><th>ROLE</th><th>JOINED</th></tr></thead><tbody>";
+
+        rows.forEach(function (u) {
+            var ref = u.referred_by && byId[u.referred_by] ? byId[u.referred_by].email : "-";
+            html += "<tr>" +
+                "<td>" + esc(((u.first_name || "") + " " + (u.last_name || "")).trim() || "-") + "</td>" +
+                "<td class='muted'>" + esc(u.email) + "</td>" +
+                "<td class='muted'>" + esc(u.phone || "-") + "</td>" +
+                "<td><b>" + esc(u.referral_code) + "</b></td>" +
+                "<td class='muted'>" + esc(ref) + "</td>" +
+                "<td class='muted'>" + esc(u.role) + "</td>" +
+                "<td class='muted'>" + fmtDate(u.created_at) + "</td>" +
+                "</tr>";
+        });
+
+        $("tableBox").innerHTML = html + "</tbody></table>";
+    }
+
+    function renderPlans() {
+
+        if (!cache.plans.length) { $("tableBox").innerHTML = '<div class="empty">No plans found.</div>'; return; }
+
+        var html = "<table><thead><tr><th>PLAN</th><th>MIN $</th><th>MAX $</th><th>DAYS</th><th>DAILY PROFIT %</th><th>REFERRAL %</th><th>ACTIVE</th><th></th></tr></thead><tbody>";
+
+        cache.plans.forEach(function (p) {
+            html += "<tr data-plan='" + esc(p.id) + "'>" +
+                "<td><b>" + esc(p.name) + "</b></td>" +
+                "<td><input class='cell-input' data-f='min'  type='number' step='0.01' value='" + Number(p.min_amount) + "'></td>" +
+                "<td><input class='cell-input' data-f='max'  type='number' step='0.01' value='" + Number(p.max_amount) + "'></td>" +
+                "<td><input class='cell-input' data-f='days' type='number' step='1'    value='" + Number(p.duration_days) + "'></td>" +
+                "<td><input class='cell-input' data-f='rate' type='number' step='0.001' value='" + Number(p.daily_rate) + "'></td>" +
+                "<td><input class='cell-input' data-f='ref'  type='number' step='0.001' value='" + Number(p.referral_rate) + "'></td>" +
+                "<td><input data-f='active' type='checkbox'" + (p.active ? " checked" : "") + "></td>" +
+                "<td><button class='btn' data-save-plan='" + esc(p.id) + "' style='padding:8px 16px;'>Save</button></td>" +
+                "</tr>";
+        });
+
+        $("tableBox").innerHTML = html + "</tbody></table>" +
+            "<p class='small' style='padding:14px 18px;'>Changes apply to NEW approvals only. Plans that already started keep their old rates.</p>";
+    }
+
 
     /* ===== EVENTS ===== */
     document.querySelectorAll(".tab").forEach(function (btn) {
-        btn.addEventListener("click", function () {
+        btn.addEventListener("click", async function () {
             document.querySelectorAll(".tab").forEach(function (b) { b.classList.remove("active"); });
             btn.classList.add("active");
             currentTab = btn.getAttribute("data-tab");
             $("searchBox").value = "";
+            toast("");
+            $("tableBox").innerHTML = '<div class="empty">Loading...</div>';
+            await loadTab();
             render();
         });
     });
 
     $("searchBox").addEventListener("input", render);
 
-    $("tableBox").addEventListener("click", function (e) {
-        var b = e.target.closest("button[data-i]");
-        if (!b) return;
+    $("tableBox").addEventListener("click", async function (e) {
 
-        var isW = b.getAttribute("data-t") === "w";
-        var list = isW ? loadWithdrawals() : loadDeposits();
-        var idx = Number(b.getAttribute("data-i"));
-        var status = b.getAttribute("data-s");
+        // approve / reject
+        var b = e.target.closest("button[data-kind]");
 
-        if (list[idx]) {
-            list[idx].status = status;
+        if (b) {
 
-            // daily profit starts counting from the approval time
-            if (!isW) {
-                if (status === "Approved") list[idx].approvedAt = new Date().toISOString();
-                else delete list[idx].approvedAt;
+            var kind = b.getAttribute("data-kind");
+            var approve = b.getAttribute("data-approve") === "true";
+            var fn = kind === "deposit" ? "admin_review_deposit" : "admin_review_withdrawal";
+
+            b.disabled = true;
+
+            var r = await ctx.sb.rpc(fn, { p_id: b.getAttribute("data-id"), p_approve: approve });
+
+            if (r.error) {
+                toast(r.error.message, false);
+                b.disabled = false;
+                return;
             }
 
-            if (isW) saveWithdrawals(list); else saveDeposits(list);
-            render();
+            toast((approve ? "Approved." : "Rejected."), true);
+            await refresh();
+            return;
+        }
+
+        // save plan
+        var s = e.target.closest("button[data-save-plan]");
+
+        if (s) {
+
+            var row = s.closest("tr");
+            function val(f) { return row.querySelector("[data-f='" + f + "']"); }
+
+            var rp = await ctx.sb.rpc("admin_update_plan", {
+                p_id: s.getAttribute("data-save-plan"),
+                p_min: parseFloat(val("min").value),
+                p_max: parseFloat(val("max").value),
+                p_days: parseInt(val("days").value, 10),
+                p_rate: parseFloat(val("rate").value),
+                p_ref: parseFloat(val("ref").value),
+                p_active: val("active").checked
+            });
+
+            toast(rp.error ? rp.error.message : "Plan saved.", !rp.error);
         }
     });
 
+    $("saveSettings").addEventListener("click", async function () {
+
+        var r = await ctx.sb.rpc("admin_update_settings", { p_min_withdraw: parseFloat($("minWithdraw").value) });
+
+        toast(r.error ? r.error.message : "Settings saved.", !r.error);
+    });
+
+
     /* ===== START ===== */
-    showPanel(sessionStorage.getItem(SESSION_KEY) === "1");
+    IPReady.then(async function (c) {
+
+        ctx = c;
+
+        if (c.session && await isAdminNow()) {
+            showPanel();
+        } else if (c.session) {
+            await c.sb.auth.signOut();
+            showLogin("The account you were logged in with is not an admin.");
+        } else {
+            showLogin();
+        }
+
+    }).catch(function () {
+        showLogin("Backend is not connected. Check app.js settings.");
+    });
 
 </script>
 
