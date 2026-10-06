@@ -307,6 +307,7 @@
             <div class="tabs">
                 <button class="tab active" data-tab="users">Users</button>
                 <button class="tab" data-tab="deposits">Deposits</button>
+                <button class="tab" data-tab="withdrawals">Withdrawals</button>
             </div>
             <input type="search" class="search" id="searchBox" placeholder="Search...">
         </div>
@@ -325,6 +326,7 @@
     var ADMIN_PASS = "admin123";
 
     var DEP_KEY = "investpro_deposits";
+    var WD_KEY = "investpro_withdrawals";
     var SESSION_KEY = "investpro_admin";
 
     var currentTab = "users";
@@ -425,7 +427,8 @@
         var users = loadUsers();
         var deps = loadDeposits();
 
-        var pending = deps.filter(function (d) { return d.status === "Pending"; }).length;
+        var pending = deps.filter(function (d) { return d.status === "Pending"; }).length +
+                      loadWithdrawals().filter(function (w) { return w.status === "Pending"; }).length;
         var approved = deps
             .filter(function (d) { return d.status === "Approved"; })
             .reduce(function (s, d) { return s + Number(d.amount || 0); }, 0);
@@ -438,6 +441,7 @@
         var q = $("searchBox").value.trim().toLowerCase();
 
         if (currentTab === "users") renderUsers(users, q);
+        else if (currentTab === "withdrawals") renderWithdrawals(loadWithdrawals(), q);
         else renderDeposits(deps, q);
     }
 
@@ -463,6 +467,51 @@
                 "<td class='muted'>" + esc(u.phone || "-") + "</td>" +
                 "<td class='muted'>" + esc(u.referral || u.referralCode || "-") + "</td>" +
                 "<td class='muted'>" + fmtDate(u.createdAt || u.joined || u.date || u.registeredAt) + "</td>" +
+                "</tr>";
+        });
+
+        $("tableBox").innerHTML = html + "</tbody></table>";
+    }
+
+    function loadWithdrawals() {
+        try { return JSON.parse(localStorage.getItem(WD_KEY) || "[]"); } catch (e) { return []; }
+    }
+
+    function saveWithdrawals(list) {
+        localStorage.setItem(WD_KEY, JSON.stringify(list));
+    }
+
+    function renderWithdrawals(list, q) {
+
+        var rows = [];
+        list.forEach(function (w, i) { rows.push({ w: w, i: i }); });
+
+        rows = rows.filter(function (r) {
+            return !q || JSON.stringify([r.w.method, r.w.status, r.w.amount, r.w.details]).toLowerCase().indexOf(q) > -1;
+        }).reverse();
+
+        if (!rows.length) {
+            $("tableBox").innerHTML = '<div class="empty">No withdrawal requests yet.</div>';
+            return;
+        }
+
+        var html = "<table><thead><tr><th>DATE</th><th>AMOUNT</th><th>METHOD</th><th>DETAILS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>";
+
+        rows.forEach(function (r) {
+            var w = r.w;
+            var status = w.status || "Pending";
+            html += "<tr>" +
+                "<td class='muted'>" + fmtDate(w.date) + "</td>" +
+                "<td><b>" + money(w.amount) + "</b></td>" +
+                "<td class='muted'>" + esc(w.method) + "</td>" +
+                "<td class='muted' style='font-size:13px;min-width:220px;'>" + detailsHtml(w) + "</td>" +
+                "<td><span class='badge " + esc(status) + "'>" + esc(status) + "</span></td>" +
+                "<td><div class='act'>" +
+                    (status === "Pending"
+                        ? "<button class='ok' data-t='w' data-i='" + r.i + "' data-s='Approved'>Approve</button>" +
+                          "<button class='no' data-t='w' data-i='" + r.i + "' data-s='Rejected'>Reject</button>"
+                        : "<button data-t='w' data-i='" + r.i + "' data-s='Pending'>Reset</button>") +
+                "</div></td>" +
                 "</tr>";
         });
 
@@ -533,11 +582,22 @@
     $("tableBox").addEventListener("click", function (e) {
         var b = e.target.closest("button[data-i]");
         if (!b) return;
-        var list = loadDeposits();
+
+        var isW = b.getAttribute("data-t") === "w";
+        var list = isW ? loadWithdrawals() : loadDeposits();
         var idx = Number(b.getAttribute("data-i"));
+        var status = b.getAttribute("data-s");
+
         if (list[idx]) {
-            list[idx].status = b.getAttribute("data-s");
-            saveDeposits(list);
+            list[idx].status = status;
+
+            // daily profit starts counting from the approval time
+            if (!isW) {
+                if (status === "Approved") list[idx].approvedAt = new Date().toISOString();
+                else delete list[idx].approvedAt;
+            }
+
+            if (isW) saveWithdrawals(list); else saveDeposits(list);
             render();
         }
     });
