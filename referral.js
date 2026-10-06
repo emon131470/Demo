@@ -187,6 +187,14 @@ var IPRef = (function () {
     /* ----- who is logged in right now? ----- */
     function currentUser() {
 
+        // the website's own login session (set by app.js)
+        var sess = localStorage.getItem("investpro_session");
+
+        if (sess) {
+            var su = findUser(sess);
+            if (su) return { email: lower(su.email), name: nameOf(su) };
+        }
+
         var best = null, bestScore = -1;
 
         [localStorage, sessionStorage].forEach(function (store) {
