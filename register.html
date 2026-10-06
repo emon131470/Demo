@@ -144,6 +144,24 @@
 </div>
 
 
+<script src="referral.js"></script>
+
+<script>
+    // Fill the referral code automatically when the user opens a referral link
+    var refParam = new URLSearchParams(window.location.search).get("ref");
+    if (refParam) document.getElementById("referral").value = refParam.toUpperCase();
+
+    // Remember who referred this user (runs before app.js saves the account)
+    document.getElementById("registerForm").addEventListener("submit", function () {
+        var name = (document.getElementById("firstName").value + " " + document.getElementById("lastName").value).trim();
+        IPRef.rememberReferral(
+            document.getElementById("email").value,
+            document.getElementById("referral").value,
+            name
+        );
+    });
+</script>
+
 <script src="app.js"></script>
 
 </body>
